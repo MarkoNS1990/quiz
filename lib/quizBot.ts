@@ -23,7 +23,7 @@ export function normalizeSerbianText(text: string): string {
 export function generateHint(answer: string, revealPercent: number): string {
   const normalized = answer.trim();
   const words = normalized.split(' ');
-  
+
   return words.map(word => {
     const revealCount = Math.max(1, Math.ceil(word.length * revealPercent));
     const revealed = word.substring(0, revealCount);
@@ -73,7 +73,7 @@ export async function getRandomQuizQuestion(): Promise<QuizQuestion | null> {
       .order('id', { ascending: false });
 
     if (error) throw error;
-    
+
     if (!data || data.length === 0) {
       console.error('No quiz questions found in database');
       return null;
@@ -91,7 +91,7 @@ export async function getRandomQuizQuestion(): Promise<QuizQuestion | null> {
 export async function postQuizQuestion(): Promise<boolean> {
   try {
     const question = await getRandomQuizQuestion();
-    
+
     if (!question) {
       await postBotMessage('Izvini, ne mogu da pronađem pitanja! 😅');
       await updateQuizState({ is_active: false });
@@ -104,14 +104,12 @@ export async function postQuizQuestion(): Promise<boolean> {
 
 ${question.question}
 
-${question.hint ? `💡 Hint: ${question.hint}` : ''}
-
 Napiši tačan odgovor! ✍️
     `.trim();
 
     // Post the quiz question to chat
     await postBotMessage(quizMessage);
-    
+
     // Update global quiz state
     await updateQuizState({
       is_active: true,
@@ -119,10 +117,10 @@ Napiši tačan odgovor! ✍️
       current_answer: question.answer,
       question_start_time: new Date().toISOString(),
     });
-    
+
     // Set up hint timers (will be handled by a watcher)
     setupHintTimers(question.id, question.answer);
-    
+
     return true;
   } catch (error) {
     console.error('Error posting quiz question:', error);
@@ -140,9 +138,9 @@ function setupHintTimers(questionId: number, answer: string) {
   if (activeTimers[questionId]) {
     activeTimers[questionId].forEach(timer => clearTimeout(timer));
   }
-  
+
   activeTimers[questionId] = [];
-  
+
   // 10 seconds - reveal 20% of letters
   const timer1 = setTimeout(async () => {
     const state = await getQuizState();
@@ -152,7 +150,7 @@ function setupHintTimers(questionId: number, answer: string) {
     }
   }, 10000);
   activeTimers[questionId].push(timer1);
-  
+
   // 20 seconds - reveal 50% of letters
   const timer2 = setTimeout(async () => {
     const state = await getQuizState();
@@ -162,13 +160,13 @@ function setupHintTimers(questionId: number, answer: string) {
     }
   }, 20000);
   activeTimers[questionId].push(timer2);
-  
+
   // 30 seconds - skip to next question
   const timer3 = setTimeout(async () => {
     const state = await getQuizState();
     if (state?.current_question_id === questionId && state.is_active) {
       await postBotMessage(`⏰ Vreme je isteklo! Tačan odgovor je: **${answer}**`);
-      
+
       // Wait 2 seconds then post next question
       setTimeout(async () => {
         const currentState = await getQuizState();
@@ -199,31 +197,31 @@ export async function postBotMessage(content: string): Promise<boolean> {
 export function checkAnswer(userAnswer: string, correctAnswer: string): { correct: boolean; similarity: number } {
   const normalizedUser = normalizeSerbianText(userAnswer);
   const normalizedCorrect = normalizeSerbianText(correctAnswer);
-  
+
   // Exact match
   if (normalizedUser === normalizedCorrect) {
     return { correct: true, similarity: 100 };
   }
-  
+
   // Check if answer is contained in the correct answer or vice versa
   if (normalizedCorrect.includes(normalizedUser) || normalizedUser.includes(normalizedCorrect)) {
     return { correct: true, similarity: 90 };
   }
-  
+
   // Calculate similarity (simple word matching)
   const userWords = normalizedUser.split(' ');
   const correctWords = normalizedCorrect.split(' ');
-  
-  const matchingWords = userWords.filter(word => 
+
+  const matchingWords = userWords.filter(word =>
     correctWords.some(cw => cw.includes(word) || word.includes(cw))
   );
-  
+
   const similarity = (matchingWords.length / Math.max(userWords.length, correctWords.length)) * 100;
-  
+
   // Consider it correct if 70% similarity
-  return { 
-    correct: similarity >= 70, 
-    similarity: Math.round(similarity) 
+  return {
+    correct: similarity >= 70,
+    similarity: Math.round(similarity)
   };
 }
 
@@ -251,9 +249,9 @@ async function saveUserScore(username: string, points: number): Promise<number> 
       console.error('Error saving user score:', error);
       return 0;
     }
-    
+
     console.log('RPC returned total_points:', data);
-    
+
     // RPC function now returns the new total_points
     return data || 0;
   } catch (error) {
@@ -264,29 +262,32 @@ async function saveUserScore(username: string, points: number): Promise<number> 
 
 export async function handleAnswerCheck(userAnswer: string, username: string): Promise<void> {
   const state = await getQuizState();
-  
+
   if (!state || !state.is_active || !state.current_answer) {
     return; // No active quiz
   }
-  
+
   const result = checkAnswer(userAnswer, state.current_answer);
-  
+
   if (result.correct) {
     // Clear timers for this question
     if (state.current_question_id && activeTimers[state.current_question_id]) {
       activeTimers[state.current_question_id].forEach(timer => clearTimeout(timer));
       delete activeTimers[state.current_question_id];
     }
-    
-    const timeElapsed = state.question_start_time 
-      ? Math.round((Date.now() - new Date(state.question_start_time).getTime()) / 1000) 
+
+    const timeElapsed = state.question_start_time
+      ? Math.round((Date.now() - new Date(state.question_start_time).getTime()) / 1000)
       : 0;
-    
+
     // Calculate points
     const points = calculatePoints(timeElapsed);
     
     // Save score to database and get new total
     const totalScore = await saveUserScore(username, points);
+    
+    // Get TOP 3 leaderboard
+    const top3Message = await getTop3Message();
     
     // Message with points
     let pointsEmoji = '';
@@ -294,15 +295,15 @@ export async function handleAnswerCheck(userAnswer: string, username: string): P
     else if (points === 2) pointsEmoji = '🥈';
     else if (points === 1) pointsEmoji = '🥉';
     
-    await postBotMessage(`🎉 Bravo, ${username}! Dobili ste ${points} ${points === 1 ? 'poen' : points < 5 ? 'poena' : 'poena'}! ${pointsEmoji}\n💯 Ukupno: ${totalScore} ${totalScore === 1 ? 'poen' : totalScore < 5 ? 'poena' : 'poena'}!`);
-    
+    await postBotMessage(`🎉 Bravo, ${username}! Dobili ste ${points} ${points === 1 ? 'poen' : points < 5 ? 'poena' : 'poena'}! ${pointsEmoji}\n💯 Ukupno: ${totalScore} ${totalScore === 1 ? 'poen' : totalScore < 5 ? 'poena' : 'poena'}!${top3Message}`);
+
     // Clear current question and wait before posting next one
     await updateQuizState({
       current_question_id: null,
       current_answer: null,
       question_start_time: null,
     });
-    
+
     // Check if quiz is still active and post next question
     setTimeout(async () => {
       const currentState = await getQuizState();
@@ -310,7 +311,7 @@ export async function handleAnswerCheck(userAnswer: string, username: string): P
         await postQuizQuestion();
       }
     }, 2000);
-    
+
   } else if (result.similarity > 40) {
     // Close but not quite
     await postBotMessage(`🤔 Blizu si ${username}! Pokušaj ponovo...`);
@@ -335,19 +336,40 @@ export async function getLeaderboard(limit: number = 10): Promise<any[]> {
   }
 }
 
+// Get formatted TOP 3 message
+async function getTop3Message(): Promise<string> {
+  try {
+    const top3 = await getLeaderboard(3);
+    
+    if (top3.length === 0) {
+      return '';
+    }
+    
+    const medals = ['🥇', '🥈', '🥉'];
+    const lines = top3.map((player, index) => {
+      return `${medals[index]} ${player.username}: ${player.total_points} poena`;
+    });
+    
+    return `\n\n🏆 TOP3:\n${lines.join('\n')}`;
+  } catch (error) {
+    console.error('Error getting TOP3:', error);
+    return '';
+  }
+}
+
 export async function stopQuiz(): Promise<void> {
   // Clear all active timers
   Object.values(activeTimers).forEach(timers => {
     timers.forEach(timer => clearTimeout(timer));
   });
   activeTimers = {};
-  
+
   // Clear inactivity timer
   if (inactivityTimer) {
     clearTimeout(inactivityTimer);
     inactivityTimer = null;
   }
-  
+
   await updateQuizState({
     is_active: false,
     current_question_id: null,
@@ -368,7 +390,7 @@ export function resetInactivityTimer(): void {
   if (inactivityTimer) {
     clearTimeout(inactivityTimer);
   }
-  
+
   // Set new timer for 3 minutes
   inactivityTimer = setTimeout(async () => {
     const state = await getQuizState();
