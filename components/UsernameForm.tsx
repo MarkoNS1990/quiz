@@ -32,7 +32,7 @@ export default function UsernameForm({ onSubmit }: { onSubmit: (username: string
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
                             placeholder="npr. gamer123, ninja, marko"
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                            className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:bg-white outline-none transition"
                             required
                             minLength={2}
                             maxLength={30}
