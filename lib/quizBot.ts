@@ -277,12 +277,23 @@ export async function handleAnswerCheck(userAnswer: string, username: string): P
       delete activeTimers[state.current_question_id];
     }
 
-    const timeElapsed = state.question_start_time
-      ? Math.round((Date.now() - new Date(state.question_start_time).getTime()) / 1000)
-      : 0;
+    // Calculate time elapsed
+    let timeElapsed = 0;
+    if (state.question_start_time) {
+      timeElapsed = Math.round((Date.now() - new Date(state.question_start_time).getTime()) / 1000);
+    } else {
+      console.warn('Question start time is missing! Defaulting to 25 seconds (1 point)');
+      timeElapsed = 25; // Default to 25s (1 point) if start time is missing
+    }
 
-    // Calculate points
-    const points = calculatePoints(timeElapsed);
+    console.log('Time elapsed:', timeElapsed, 'seconds');
+    console.log('Question start time:', state.question_start_time);
+
+    // Calculate points (clamp timeElapsed to 30 seconds max to avoid 0 points)
+    const clampedTime = Math.min(Math.max(timeElapsed, 0), 30);
+    const points = calculatePoints(clampedTime);
+    
+    console.log('Clamped time:', clampedTime, 'Calculated points:', points);
 
     // Save score to database and get new total
     const totalScore = await saveUserScore(username, points);

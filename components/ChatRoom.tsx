@@ -302,20 +302,20 @@ export default function ChatRoom({ username }: { username: string }) {
                                             <div className="break-words whitespace-pre-line">
                                                 {(() => {
                                                     // Auto-detect image URLs (flagcdn.com or common image extensions)
-                                                    const imageMatch = message.content.match(/(https?:\/\/[^\s]+\.(?:png|jpg|jpeg|gif|webp))/i) || 
-                                                                       message.content.match(/(https?:\/\/flagcdn\.com[^\s]+)/);
-                                                    
+                                                    const imageMatch = message.content.match(/(https?:\/\/[^\s]+\.(?:png|jpg|jpeg|gif|webp))/i) ||
+                                                        message.content.match(/(https?:\/\/flagcdn\.com[^\s]+)/);
+
                                                     if (imageMatch) {
                                                         const imageUrl = imageMatch[1];
                                                         const parts = message.content.split(imageUrl);
-                                                        
+
                                                         return (
                                                             <>
                                                                 {parts[0]}
                                                                 <div className="my-2">
-                                                                    <img 
-                                                                        src={imageUrl} 
-                                                                        alt="Quiz slika" 
+                                                                    <img
+                                                                        src={imageUrl}
+                                                                        alt="Quiz slika"
                                                                         className="rounded-lg max-w-full h-auto shadow-md"
                                                                         style={{ maxHeight: '300px' }}
                                                                     />
