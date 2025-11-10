@@ -21,3 +21,12 @@ export type QuizQuestion = {
   difficulty: 'lako' | 'srednje' | 'teško' | null;
   created_at: string;
 };
+
+export type QuizState = {
+  id: number;
+  is_active: boolean;
+  current_question_id: number | null;
+  current_answer: string | null;
+  question_start_time: string | null;
+  updated_at: string;
+};

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { supabase, Message } from '@/lib/supabase';
-import { postQuizQuestion, handleAnswerCheck, stopQuiz, isQuizActive } from '@/lib/quizBot';
+import { startQuiz, handleAnswerCheck, stopQuiz, getQuizState } from '@/lib/quizBot';
 
 export default function ChatRoom({ username }: { username: string }) {
     const [messages, setMessages] = useState<Message[]>([]);
@@ -14,12 +14,18 @@ export default function ChatRoom({ username }: { username: string }) {
 
     useEffect(() => {
         loadMessages();
-        const cleanup = subscribeToMessages();
+        const cleanupMessages = subscribeToMessages();
 
-        // Check if quiz is already running
-        setQuizRunning(isQuizActive());
+        // Load initial quiz state
+        loadQuizState();
 
-        return cleanup;
+        // Subscribe to quiz state changes
+        const cleanupQuiz = subscribeToQuizState();
+
+        return () => {
+            cleanupMessages();
+            cleanupQuiz();
+        };
     }, []);
 
     useEffect(() => {
@@ -65,11 +71,45 @@ export default function ChatRoom({ username }: { username: string }) {
                 }
             )
             .subscribe((status: string) => {
-                console.log('Subscription status:', status);
+                console.log('Messages subscription status:', status);
             });
 
         return () => {
-            console.log('Cleaning up subscription...');
+            console.log('Cleaning up messages subscription...');
+            supabase.removeChannel(channel);
+        };
+    };
+
+    const loadQuizState = async () => {
+        const state = await getQuizState();
+        if (state) {
+            setQuizRunning(state.is_active);
+        }
+    };
+
+    const subscribeToQuizState = () => {
+        console.log('Setting up quiz state subscription...');
+
+        const channel = supabase
+            .channel('public:quiz_state')
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'quiz_state',
+                },
+                (payload: any) => {
+                    console.log('Quiz state updated!', payload);
+                    setQuizRunning(payload.new.is_active);
+                }
+            )
+            .subscribe((status: string) => {
+                console.log('Quiz state subscription status:', status);
+            });
+
+        return () => {
+            console.log('Cleaning up quiz state subscription...');
             supabase.removeChannel(channel);
         };
     };
@@ -89,17 +129,12 @@ export default function ChatRoom({ username }: { username: string }) {
             if (error) throw error;
             setNewMessage('');
 
-            // If quiz is active, ANYONE can answer (not just who started it)
-            if (typeof window !== 'undefined') {
-                const isQuizActive = sessionStorage.getItem('quizActive') === 'true';
-                const hasActiveQuestion = sessionStorage.getItem('currentQuizAnswer');
-
-                if (isQuizActive && hasActiveQuestion) {
-                    // Wait a bit for the message to be sent, then check answer
-                    setTimeout(() => {
-                        handleAnswerCheck(messageContent, username);
-                    }, 500);
-                }
+            // If quiz is active, ANYONE can answer
+            if (quizRunning) {
+                // Wait a bit for the message to be sent, then check answer
+                setTimeout(() => {
+                    handleAnswerCheck(messageContent, username);
+                }, 500);
             }
         } catch (error) {
             console.error('Error sending message:', error);
@@ -110,8 +145,8 @@ export default function ChatRoom({ username }: { username: string }) {
     const handleStartQuiz = async () => {
         setQuizLoading(true);
         try {
-            await postQuizQuestion();
-            setQuizRunning(true);
+            await startQuiz();
+            // quizRunning will be updated via real-time subscription
         } catch (error) {
             console.error('Error triggering quiz bot:', error);
             alert('Greška pri pokretanju kviza');
@@ -120,9 +155,13 @@ export default function ChatRoom({ username }: { username: string }) {
         }
     };
 
-    const handleStopQuiz = () => {
-        stopQuiz();
-        setQuizRunning(false);
+    const handleStopQuiz = async () => {
+        try {
+            await stopQuiz();
+            // quizRunning will be updated via real-time subscription
+        } catch (error) {
+            console.error('Error stopping quiz:', error);
+        }
     };
 
     const handleChangeUsername = () => {
