@@ -98,13 +98,12 @@ export async function postQuizQuestion(): Promise<boolean> {
       return false;
     }
 
-    // Format the quiz question message in Serbian (without options)
+    // Format the quiz question message in Serbian (with optional image)
     const quizMessage = `
 📚 **${question.category || 'Kviz'}** ${question.difficulty ? `(${question.difficulty})` : ''}
 
 ${question.question}
-
-${question.hint ? `💡 Hint: ${question.hint}` : ''}
+${question.image_url ? `\n🖼️ Slika: ${question.image_url}` : ''}
 
 Napiši tačan odgovor! ✍️
     `.trim();
