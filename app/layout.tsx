@@ -13,8 +13,32 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Chat App - Real-time Messaging",
-  description: "A simple real-time chat application built with Next.js and Supabase",
+  title: "🎯 Kosingasi Kviz",
+  description: "Real-time multiplayer kviz sa pitanjima na srpskom jeziku. Takmičite se sa prijateljima i osvojite najviše poena!",
+  openGraph: {
+    title: "🎯 Kosingasi Kviz",
+    description: "Real-time multiplayer kviz sa pitanjima na srpskom jeziku. Takmičite se sa prijateljima i osvojite najviše poena!",
+    type: "website",
+    locale: "sr_RS",
+    siteName: "Kosingasi Kviz",
+    images: [
+      {
+        url: "https://images.unsplash.com/photo-1606326608606-aa0b62935f2b?w=1200&h=630&fit=crop&q=80",
+        width: 1200,
+        height: 630,
+        alt: "Kosingasi Kviz - Multiplayer Quiz Game",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "🎯 Kosingasi Kviz",
+    description: "Real-time multiplayer kviz sa pitanjima na srpskom jeziku. Takmičite se sa prijateljima i osvojite najviše poena!",
+    images: ["https://images.unsplash.com/photo-1606326608606-aa0b62935f2b?w=1200&h=630&fit=crop&q=80"],
+  },
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({
