@@ -98,11 +98,12 @@ export async function postQuizQuestion(): Promise<boolean> {
       return false;
     }
 
-    // Format the quiz question message in Serbian (without options)
+    // Format the quiz question message in Serbian (with optional image)
     const quizMessage = `
 📚 **${question.category || 'Kviz'}** ${question.difficulty ? `(${question.difficulty})` : ''}
 
 ${question.question}
+${question.image_url ? `\n🖼️ Slika: ${question.image_url}` : ''}
 
 Napiši tačan odgovor! ✍️
     `.trim();
@@ -282,19 +283,19 @@ export async function handleAnswerCheck(userAnswer: string, username: string): P
 
     // Calculate points
     const points = calculatePoints(timeElapsed);
-    
+
     // Save score to database and get new total
     const totalScore = await saveUserScore(username, points);
-    
+
     // Get TOP 3 leaderboard
     const top3Message = await getTop3Message();
-    
+
     // Message with points
     let pointsEmoji = '';
     if (points === 3) pointsEmoji = '🏆';
     else if (points === 2) pointsEmoji = '🥈';
     else if (points === 1) pointsEmoji = '🥉';
-    
+
     await postBotMessage(`🎉 Bravo, ${username}! Dobili ste ${points} ${points === 1 ? 'poen' : points < 5 ? 'poena' : 'poena'}! ${pointsEmoji}\n💯 Ukupno: ${totalScore} ${totalScore === 1 ? 'poen' : totalScore < 5 ? 'poena' : 'poena'}!${top3Message}`);
 
     // Clear current question and wait before posting next one
@@ -340,16 +341,16 @@ export async function getLeaderboard(limit: number = 10): Promise<any[]> {
 async function getTop3Message(): Promise<string> {
   try {
     const top3 = await getLeaderboard(3);
-    
+
     if (top3.length === 0) {
       return '';
     }
-    
+
     const medals = ['🥇', '🥈', '🥉'];
     const lines = top3.map((player, index) => {
       return `${medals[index]} ${player.username}: ${player.total_points} poena`;
     });
-    
+
     return `\n\n🏆 TOP3:\n${lines.join('\n')}`;
   } catch (error) {
     console.error('Error getting TOP3:', error);
