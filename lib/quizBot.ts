@@ -264,8 +264,21 @@ async function saveUserScore(username: string, points: number): Promise<number> 
 export async function handleAnswerCheck(userAnswer: string, username: string): Promise<void> {
   const state = await getQuizState();
 
-  if (!state || !state.is_active || !state.current_answer) {
-    return; // No active quiz
+  // Check if quiz is not active
+  if (!state || !state.is_active) {
+    // Only respond if the message looks like an attempt to answer (short, single word)
+    const looksLikeAnswer = userAnswer.trim().length > 0 && 
+                           userAnswer.trim().length < 50 && 
+                           userAnswer.trim().split(/\s+/).length <= 3;
+    
+    if (looksLikeAnswer) {
+      await postBotMessage(`${username}, kviz trenutno nije aktivan! 🤖\nKlikni na "Pokreni Kviz" dugme da započneš igru! 🎮`);
+    }
+    return;
+  }
+
+  if (!state.current_answer) {
+    return; // No active question
   }
 
   const result = checkAnswer(userAnswer, state.current_answer);
@@ -292,7 +305,7 @@ export async function handleAnswerCheck(userAnswer: string, username: string): P
     // Calculate points (clamp timeElapsed to 30 seconds max to avoid 0 points)
     const clampedTime = Math.min(Math.max(timeElapsed, 0), 30);
     const points = calculatePoints(clampedTime);
-    
+
     console.log('Clamped time:', clampedTime, 'Calculated points:', points);
 
     // Save score to database and get new total
@@ -357,6 +370,9 @@ export async function stopQuiz(): Promise<void> {
     clearTimeout(inactivityTimer);
     inactivityTimer = null;
   }
+
+  // Post stop message
+  await postBotMessage('🛑 Kviz je zaustavljen!\n\nKlikni na "Pokreni Kviz" dugme da nastaviš igru! 🎮');
 
   await updateQuizState({
     is_active: false,
