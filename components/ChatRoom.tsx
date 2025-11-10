@@ -301,25 +301,26 @@ export default function ChatRoom({ username }: { username: string }) {
                                             </div>
                                             <div className="break-words whitespace-pre-line">
                                                 {(() => {
-                                                    // Check if message contains image URL
-                                                    const imageMatch = message.content.match(/🖼️ Slika: (https?:\/\/[^\s]+)/);
+                                                    // Auto-detect image URLs (flagcdn.com or common image extensions)
+                                                    const imageMatch = message.content.match(/(https?:\/\/[^\s]+\.(?:png|jpg|jpeg|gif|webp))/i) || 
+                                                                       message.content.match(/(https?:\/\/flagcdn\.com[^\s]+)/);
+                                                    
                                                     if (imageMatch) {
                                                         const imageUrl = imageMatch[1];
-                                                        const textBeforeImage = message.content.substring(0, imageMatch.index);
-                                                        const textAfterImage = message.content.substring(imageMatch.index! + imageMatch[0].length);
-
+                                                        const parts = message.content.split(imageUrl);
+                                                        
                                                         return (
                                                             <>
-                                                                {textBeforeImage}
+                                                                {parts[0]}
                                                                 <div className="my-2">
-                                                                    <img
-                                                                        src={imageUrl}
-                                                                        alt="Quiz slika"
-                                                                        className="rounded-lg max-w-full h-auto"
+                                                                    <img 
+                                                                        src={imageUrl} 
+                                                                        alt="Quiz slika" 
+                                                                        className="rounded-lg max-w-full h-auto shadow-md"
                                                                         style={{ maxHeight: '300px' }}
                                                                     />
                                                                 </div>
-                                                                {textAfterImage}
+                                                                {parts[1]}
                                                             </>
                                                         );
                                                     }

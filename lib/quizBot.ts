@@ -103,7 +103,7 @@ export async function postQuizQuestion(): Promise<boolean> {
 📚 **${question.category || 'Kviz'}** ${question.difficulty ? `(${question.difficulty})` : ''}
 
 ${question.question}
-${question.image_url ? `\n🖼️ Slika: ${question.image_url}` : ''}
+${question.image_url ? `\n${question.image_url}` : ''}
 
 Napiši tačan odgovor! ✍️
     `.trim();
