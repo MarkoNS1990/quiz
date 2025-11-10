@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { supabase, Message } from '@/lib/supabase';
-import { startQuiz, handleAnswerCheck, stopQuiz, getQuizState } from '@/lib/quizBot';
+import { startQuiz, handleAnswerCheck, stopQuiz, getQuizState, resetInactivityTimer } from '@/lib/quizBot';
 
 export default function ChatRoom({ username }: { username: string }) {
     const [messages, setMessages] = useState<Message[]>([]);
@@ -131,6 +131,9 @@ export default function ChatRoom({ username }: { username: string }) {
 
             // If quiz is active, ANYONE can answer
             if (quizRunning) {
+                // Reset inactivity timer on user message
+                resetInactivityTimer();
+                
                 // Wait a bit for the message to be sent, then check answer
                 setTimeout(() => {
                     handleAnswerCheck(messageContent, username);
@@ -186,32 +189,34 @@ export default function ChatRoom({ username }: { username: string }) {
                         <h1 className="text-2xl font-bold text-gray-800">Čet Soba</h1>
                         <p className="text-sm text-gray-600">Korisnik: {username}</p>
                     </div>
-                    <div className="flex gap-2">
-                        {!quizRunning ? (
-                            <button
-                                onClick={handleStartQuiz}
-                                disabled={quizLoading}
-                                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {quizLoading ? '🤖 Učitavanje...' : '🤖 Pokreni Kviz'}
-                            </button>
-                        ) : (
-                            <button
-                                onClick={handleStopQuiz}
-                                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition animate-pulse"
-                            >
-                                🛑 Zaustavi Kviz
-                            </button>
-                        )}
-                        <button
-                            onClick={handleChangeUsername}
-                            className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition"
-                        >
-                            Promeni Ime
-                        </button>
-                    </div>
+                    <button
+                        onClick={handleChangeUsername}
+                        className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition"
+                    >
+                        Promeni Ime
+                    </button>
                 </div>
             </header>
+            
+            {/* Floating Quiz Control Button - Always Visible */}
+            <div className="fixed bottom-24 right-4 z-50">
+                {!quizRunning ? (
+                    <button
+                        onClick={handleStartQuiz}
+                        disabled={quizLoading}
+                        className="px-6 py-3 bg-indigo-600 text-white rounded-full shadow-2xl hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed hover:scale-110 transform"
+                    >
+                        {quizLoading ? '🤖 Učitavanje...' : '🤖 Pokreni Kviz'}
+                    </button>
+                ) : (
+                    <button
+                        onClick={handleStopQuiz}
+                        className="px-6 py-3 bg-red-600 text-white rounded-full shadow-2xl hover:bg-red-700 transition animate-pulse hover:scale-110 transform"
+                    >
+                        🛑 Zaustavi Kviz
+                    </button>
+                )}
+            </div>
 
             {/* Messages Container */}
             <div className="flex-1 max-w-4xl w-full mx-auto p-4 overflow-hidden flex flex-col">

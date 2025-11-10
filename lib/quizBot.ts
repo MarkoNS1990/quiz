@@ -133,6 +133,7 @@ Napiši tačan odgovor! ✍️
 
 // Store active timers globally
 let activeTimers: { [key: number]: NodeJS.Timeout[] } = {};
+let inactivityTimer: NodeJS.Timeout | null = null;
 
 function setupHintTimers(questionId: number, answer: string) {
   // Clear any existing timers for this question
@@ -277,6 +278,12 @@ export async function stopQuiz(): Promise<void> {
   });
   activeTimers = {};
   
+  // Clear inactivity timer
+  if (inactivityTimer) {
+    clearTimeout(inactivityTimer);
+    inactivityTimer = null;
+  }
+  
   await updateQuizState({
     is_active: false,
     current_question_id: null,
@@ -287,4 +294,31 @@ export async function stopQuiz(): Promise<void> {
 
 export async function startQuiz(): Promise<void> {
   await postQuizQuestion();
+  // Start inactivity timer
+  resetInactivityTimer();
+}
+
+// Reset inactivity timer - call this when user sends a message
+export function resetInactivityTimer(): void {
+  // Clear existing timer
+  if (inactivityTimer) {
+    clearTimeout(inactivityTimer);
+  }
+  
+  // Set new timer for 3 minutes
+  inactivityTimer = setTimeout(async () => {
+    const state = await getQuizState();
+    if (state?.is_active) {
+      await postBotMessage('⏰ Kviz je zaustavljen zbog neaktivnosti (3 minute).');
+      await stopQuiz();
+    }
+  }, 3 * 60 * 1000); // 3 minutes
+}
+
+// Clear inactivity timer
+export function clearInactivityTimer(): void {
+  if (inactivityTimer) {
+    clearTimeout(inactivityTimer);
+    inactivityTimer = null;
+  }
 }
