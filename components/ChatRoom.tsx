@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase, Message } from '@/lib/supabase';
 import { startQuiz, handleAnswerCheck, stopQuiz, getQuizState, resetInactivityTimer } from '@/lib/quizBot';
 import Leaderboard from './Leaderboard';
+import OnlineUsers from './OnlineUsers';
 
 export default function ChatRoom({ username }: { username: string }) {
     const [messages, setMessages] = useState<Message[]>([]);
@@ -229,14 +230,15 @@ export default function ChatRoom({ username }: { username: string }) {
             </div>
 
             {/* Leaderboard Modal */}
-            <Leaderboard 
-                isOpen={showLeaderboard} 
-                onClose={() => setShowLeaderboard(false)} 
+            <Leaderboard
+                isOpen={showLeaderboard}
+                onClose={() => setShowLeaderboard(false)}
             />
 
-            {/* Messages Container */}
-            <div className="flex-1 max-w-4xl w-full mx-auto p-4 overflow-hidden flex flex-col">
-                <div className="bg-white rounded-2xl shadow-xl flex-1 flex flex-col overflow-hidden">
+            {/* Main Content Area with Sidebar */}
+            <div className="flex-1 max-w-6xl w-full mx-auto p-4 overflow-hidden flex gap-4">
+                {/* Chat Messages */}
+                <div className="flex-1 bg-white rounded-2xl shadow-xl flex flex-col overflow-hidden">
                     {/* Messages List */}
                     <div className="flex-1 overflow-y-auto p-4 space-y-4">
                         {messages.length === 0 ? (
@@ -315,6 +317,9 @@ export default function ChatRoom({ username }: { username: string }) {
                         </div>
                     </form>
                 </div>
+
+                {/* Online Users Sidebar */}
+                <OnlineUsers currentUsername={username} />
             </div>
         </div>
     );
