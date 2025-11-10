@@ -16,7 +16,6 @@ export type QuizQuestion = {
   id: number;
   question: string;
   answer: string;
-  image_url: string | null;
   category: string | null;
   difficulty: 'lako' | 'srednje' | 'teško' | null;
   created_at: string;
