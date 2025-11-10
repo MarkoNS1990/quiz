@@ -89,10 +89,12 @@ export default function ChatRoom({ username }: { username: string }) {
             if (error) throw error;
             setNewMessage('');
 
-            // If quiz is active, check if this is an answer attempt
-            if (quizRunning && typeof window !== 'undefined') {
+            // If quiz is active, ANYONE can answer (not just who started it)
+            if (typeof window !== 'undefined') {
+                const isQuizActive = sessionStorage.getItem('quizActive') === 'true';
                 const hasActiveQuestion = sessionStorage.getItem('currentQuizAnswer');
-                if (hasActiveQuestion) {
+
+                if (isQuizActive && hasActiveQuestion) {
                     // Wait a bit for the message to be sent, then check answer
                     setTimeout(() => {
                         handleAnswerCheck(messageContent, username);

@@ -12,11 +12,14 @@ export function normalizeSerbianText(text: string): string {
   return text
     .toLowerCase()
     .trim()
+    // Handle digraphs first (before single character replacements)
+    .replace(/dž/g, 'dz')
+    .replace(/đ/g, 'dj')
+    // Now handle remaining special characters
     .replace(/č/g, 'c')
     .replace(/ć/g, 'c')
     .replace(/š/g, 's')
     .replace(/ž/g, 'z')
-    .replace(/đ/g, 'd')
     .replace(/[^a-z0-9\s]/g, '') // Remove special characters
     .replace(/\s+/g, ' '); // Normalize spaces
 }
