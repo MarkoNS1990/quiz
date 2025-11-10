@@ -239,6 +239,23 @@ function calculatePoints(timeElapsed: number): number {
   return 0; // After timeout (shouldn't happen but just in case)
 }
 
+// Get user's current total score
+async function getUserTotalScore(username: string): Promise<number> {
+  try {
+    const { data, error } = await supabase
+      .from('user_scores')
+      .select('total_points')
+      .eq('username', username)
+      .single();
+
+    if (error || !data) return 0;
+    return data.total_points;
+  } catch (error) {
+    console.error('Error getting user score:', error);
+    return 0;
+  }
+}
+
 // Save user score to database
 async function saveUserScore(username: string, points: number): Promise<boolean> {
   try {
@@ -281,13 +298,16 @@ export async function handleAnswerCheck(userAnswer: string, username: string): P
     // Save score to database
     await saveUserScore(username, points);
     
+    // Get total score after saving
+    const totalScore = await getUserTotalScore(username);
+    
     // Message with points
     let pointsEmoji = '';
     if (points === 3) pointsEmoji = '🏆';
     else if (points === 2) pointsEmoji = '🥈';
     else if (points === 1) pointsEmoji = '🥉';
     
-    await postBotMessage(`🎉 Tačno, ${username}! ${pointsEmoji} +${points} poena! (${timeElapsed}s)`);
+    await postBotMessage(`🎉 Bravo, ${username}! Dobili ste ${points} ${points === 1 ? 'poen' : points < 5 ? 'poena' : 'poena'}! ${pointsEmoji}\n💯 Ukupno: ${totalScore} ${totalScore === 1 ? 'poen' : totalScore < 5 ? 'poena' : 'poena'}!`);
     
     // Clear current question and wait before posting next one
     await updateQuizState({
