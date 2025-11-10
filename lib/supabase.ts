@@ -30,3 +30,14 @@ export type QuizState = {
   question_start_time: string | null;
   updated_at: string;
 };
+
+export type UserScore = {
+  id: number;
+  username: string;
+  total_points: number;
+  correct_answers: number;
+  three_point_answers: number;
+  two_point_answers: number;
+  one_point_answers: number;
+  last_updated: string;
+};

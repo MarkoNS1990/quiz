@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase, Message } from '@/lib/supabase';
 import { startQuiz, handleAnswerCheck, stopQuiz, getQuizState, resetInactivityTimer } from '@/lib/quizBot';
+import Leaderboard from './Leaderboard';
 
 export default function ChatRoom({ username }: { username: string }) {
     const [messages, setMessages] = useState<Message[]>([]);
@@ -10,6 +11,7 @@ export default function ChatRoom({ username }: { username: string }) {
     const [loading, setLoading] = useState(true);
     const [quizLoading, setQuizLoading] = useState(false);
     const [quizRunning, setQuizRunning] = useState(false);
+    const [showLeaderboard, setShowLeaderboard] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -133,7 +135,7 @@ export default function ChatRoom({ username }: { username: string }) {
             if (quizRunning) {
                 // Reset inactivity timer on user message
                 resetInactivityTimer();
-                
+
                 // Wait a bit for the message to be sent, then check answer
                 setTimeout(() => {
                     handleAnswerCheck(messageContent, username);
@@ -189,15 +191,23 @@ export default function ChatRoom({ username }: { username: string }) {
                         <h1 className="text-2xl font-bold text-gray-800">Čet Soba</h1>
                         <p className="text-sm text-gray-600">Korisnik: {username}</p>
                     </div>
-                    <button
-                        onClick={handleChangeUsername}
-                        className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition"
-                    >
-                        Promeni Ime
-                    </button>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setShowLeaderboard(true)}
+                            className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition font-semibold"
+                        >
+                            🏆 Leaderboard
+                        </button>
+                        <button
+                            onClick={handleChangeUsername}
+                            className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition"
+                        >
+                            Promeni Ime
+                        </button>
+                    </div>
                 </div>
             </header>
-            
+
             {/* Floating Quiz Control Button - Always Visible */}
             <div className="fixed bottom-24 right-4 z-50">
                 {!quizRunning ? (
@@ -217,6 +227,12 @@ export default function ChatRoom({ username }: { username: string }) {
                     </button>
                 )}
             </div>
+
+            {/* Leaderboard Modal */}
+            <Leaderboard 
+                isOpen={showLeaderboard} 
+                onClose={() => setShowLeaderboard(false)} 
+            />
 
             {/* Messages Container */}
             <div className="flex-1 max-w-4xl w-full mx-auto p-4 overflow-hidden flex flex-col">

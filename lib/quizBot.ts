@@ -227,6 +227,34 @@ export function checkAnswer(userAnswer: string, correctAnswer: string): { correc
   };
 }
 
+// Calculate points based on time elapsed
+function calculatePoints(timeElapsed: number): number {
+  if (timeElapsed <= 10) {
+    return 3; // Before first hint
+  } else if (timeElapsed <= 20) {
+    return 2; // After first hint, before second
+  } else if (timeElapsed <= 30) {
+    return 1; // After second hint
+  }
+  return 0; // After timeout (shouldn't happen but just in case)
+}
+
+// Save user score to database
+async function saveUserScore(username: string, points: number): Promise<boolean> {
+  try {
+    const { error } = await supabase.rpc('upsert_user_score', {
+      p_username: username,
+      p_points: points
+    });
+
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error('Error saving user score:', error);
+    return false;
+  }
+}
+
 export async function handleAnswerCheck(userAnswer: string, username: string): Promise<void> {
   const state = await getQuizState();
   
@@ -247,7 +275,19 @@ export async function handleAnswerCheck(userAnswer: string, username: string): P
       ? Math.round((Date.now() - new Date(state.question_start_time).getTime()) / 1000) 
       : 0;
     
-    await postBotMessage(`🎉 Tačno, ${username}! Bravo! 👏 (${timeElapsed}s)`);
+    // Calculate points
+    const points = calculatePoints(timeElapsed);
+    
+    // Save score to database
+    await saveUserScore(username, points);
+    
+    // Message with points
+    let pointsEmoji = '';
+    if (points === 3) pointsEmoji = '🏆';
+    else if (points === 2) pointsEmoji = '🥈';
+    else if (points === 1) pointsEmoji = '🥉';
+    
+    await postBotMessage(`🎉 Tačno, ${username}! ${pointsEmoji} +${points} poena! (${timeElapsed}s)`);
     
     // Clear current question and wait before posting next one
     await updateQuizState({
@@ -269,6 +309,23 @@ export async function handleAnswerCheck(userAnswer: string, username: string): P
     await postBotMessage(`🤔 Blizu si ${username}! Pokušaj ponovo...`);
   }
   // Don't respond if answer is too far off
+}
+
+// Get leaderboard
+export async function getLeaderboard(limit: number = 10): Promise<any[]> {
+  try {
+    const { data, error } = await supabase
+      .from('user_scores')
+      .select('*')
+      .order('total_points', { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching leaderboard:', error);
+    return [];
+  }
 }
 
 export async function stopQuiz(): Promise<void> {
