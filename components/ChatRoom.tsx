@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { supabase, Message } from '@/lib/supabase';
+import { supabase, Message, cleanupOldMessages } from '@/lib/supabase';
 import { startQuiz, handleAnswerCheck, stopQuiz, getQuizState, resetInactivityTimer } from '@/lib/quizBot';
 import Leaderboard from './Leaderboard';
 import OnlineUsers from './OnlineUsers';
@@ -18,6 +18,9 @@ export default function ChatRoom({ username }: { username: string }) {
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
+        // Clean up old messages (older than 30 minutes) on app load
+        cleanupOldMessages();
+
         loadMessages();
         const cleanupMessages = subscribeToMessages();
 
@@ -46,11 +49,12 @@ export default function ChatRoom({ username }: { username: string }) {
             const { data, error } = await supabase
                 .from('messages')
                 .select('*')
-                .order('created_at', { ascending: true })
+                .order('created_at', { ascending: false })
                 .limit(100);
 
             if (error) throw error;
-            setMessages(data || []);
+            // Reverse to show oldest first (chronological order)
+            setMessages((data || []).reverse());
         } catch (error) {
             console.error('Error loading messages:', error);
         } finally {

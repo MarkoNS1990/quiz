@@ -41,3 +41,24 @@ export type UserScore = {
   one_point_answers: number;
   last_updated: string;
 };
+
+/**
+ * Deletes messages older than 30 minutes from the database
+ * This keeps the chat clean and only shows recent messages
+ */
+export async function cleanupOldMessages(): Promise<boolean> {
+  try {
+    const { error } = await supabase.rpc('cleanup_old_messages');
+    
+    if (error) {
+      console.error('Error cleaning up old messages:', error);
+      return false;
+    }
+    
+    console.log('Old messages cleaned up successfully');
+    return true;
+  } catch (error) {
+    console.error('Error calling cleanup function:', error);
+    return false;
+  }
+}

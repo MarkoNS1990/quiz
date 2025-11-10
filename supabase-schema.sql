@@ -46,6 +46,18 @@ CREATE POLICY "Quiz questions are viewable by everyone"
 -- Enable realtime for messages table
 ALTER PUBLICATION supabase_realtime ADD TABLE messages;
 
+-- Function to automatically clean up old messages (older than 30 minutes)
+-- This keeps the chat clean and shows only recent messages
+CREATE OR REPLACE FUNCTION cleanup_old_messages()
+RETURNS void
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  DELETE FROM messages
+  WHERE created_at < NOW() - INTERVAL '30 minutes';
+END;
+$$;
+
 -- Insert sample quiz questions
 INSERT INTO quiz_questions (question, option_a, option_b, option_c, option_d, correct_answer, category, difficulty) VALUES
 ('What is the capital of France?', 'London', 'Berlin', 'Paris', 'Madrid', 'C', 'Geography', 'easy'),
