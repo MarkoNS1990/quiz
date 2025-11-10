@@ -239,36 +239,26 @@ function calculatePoints(timeElapsed: number): number {
   return 0; // After timeout (shouldn't happen but just in case)
 }
 
-// Get user's current total score
-async function getUserTotalScore(username: string): Promise<number> {
+// Save user score to database and return new total
+async function saveUserScore(username: string, points: number): Promise<number> {
   try {
-    const { data, error } = await supabase
-      .from('user_scores')
-      .select('total_points')
-      .eq('username', username)
-      .single();
-
-    if (error || !data) return 0;
-    return data.total_points;
-  } catch (error) {
-    console.error('Error getting user score:', error);
-    return 0;
-  }
-}
-
-// Save user score to database
-async function saveUserScore(username: string, points: number): Promise<boolean> {
-  try {
-    const { error } = await supabase.rpc('upsert_user_score', {
+    const { data, error } = await supabase.rpc('upsert_user_score', {
       p_username: username,
       p_points: points
     });
 
-    if (error) throw error;
-    return true;
+    if (error) {
+      console.error('Error saving user score:', error);
+      return 0;
+    }
+    
+    console.log('RPC returned total_points:', data);
+    
+    // RPC function now returns the new total_points
+    return data || 0;
   } catch (error) {
     console.error('Error saving user score:', error);
-    return false;
+    return 0;
   }
 }
 
@@ -295,11 +285,8 @@ export async function handleAnswerCheck(userAnswer: string, username: string): P
     // Calculate points
     const points = calculatePoints(timeElapsed);
     
-    // Save score to database
-    await saveUserScore(username, points);
-    
-    // Get total score after saving
-    const totalScore = await getUserTotalScore(username);
+    // Save score to database and get new total
+    const totalScore = await saveUserScore(username, points);
     
     // Message with points
     let pointsEmoji = '';
