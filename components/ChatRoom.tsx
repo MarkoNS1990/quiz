@@ -187,55 +187,65 @@ export default function ChatRoom({ username }: { username: string }) {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col">
-            {/* Header */}
-            <header className="bg-white shadow-sm">
-                <div className="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
-                    <div>
-                        <h1 className="text-2xl font-bold text-gray-800">Čet Soba</h1>
-                        <p className="text-sm text-gray-600">Korisnik: {username}</p>
-                    </div>
-                    <div className="flex gap-2">
-                        <button
-                            onClick={() => setShowOnlineUsers(true)}
-                            className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition font-semibold flex items-center gap-2"
-                        >
-                            👥 {onlineCount} {onlineCount === 1 ? 'korisnik' : 'korisnika'}
-                        </button>
-                        <button
-                            onClick={() => setShowLeaderboard(true)}
-                            className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition font-semibold"
-                        >
-                            🏆 Leaderboard
-                        </button>
-                        <button
-                            onClick={handleChangeUsername}
-                            className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition"
-                        >
-                            Promeni Ime
-                        </button>
+            {/* Sticky Header */}
+            <header className="sticky top-0 z-50 bg-white shadow-md">
+                <div className="max-w-6xl mx-auto px-4 py-4">
+                    <div className="flex justify-between items-center gap-4">
+                        {/* Left: Title & User */}
+                        <div className="flex-shrink-0">
+                            <h1 className="text-xl lg:text-2xl font-bold text-gray-800">Čet Soba</h1>
+                            <p className="text-xs lg:text-sm text-gray-600">Korisnik: {username}</p>
+                        </div>
+
+                        {/* Right: Action Buttons */}
+                        <div className="flex gap-2 flex-wrap justify-end">
+                            {/* Quiz Control Button */}
+                            {!quizRunning ? (
+                                <button
+                                    onClick={handleStartQuiz}
+                                    disabled={quizLoading}
+                                    className="px-3 lg:px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                                >
+                                    {quizLoading ? '⏳ Učitavanje...' : '🤖 Pokreni Kviz'}
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={handleStopQuiz}
+                                    className="px-3 lg:px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold animate-pulse shadow-lg"
+                                >
+                                    🛑 Zaustavi Kviz
+                                </button>
+                            )}
+
+                            {/* Online Users Button */}
+                            <button
+                                onClick={() => setShowOnlineUsers(true)}
+                                className="px-3 lg:px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition font-semibold flex items-center gap-1 lg:gap-2"
+                            >
+                                👥 <span className="hidden sm:inline">{onlineCount}</span>
+                                <span className="hidden lg:inline">{onlineCount === 1 ? 'korisnik' : 'korisnika'}</span>
+                            </button>
+
+                            {/* Leaderboard Button */}
+                            <button
+                                onClick={() => setShowLeaderboard(true)}
+                                className="px-3 lg:px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition font-semibold"
+                            >
+                                🏆 <span className="hidden sm:inline">Leaderboard</span>
+                            </button>
+
+                            {/* Change Username Button */}
+                            <button
+                                onClick={handleChangeUsername}
+                                className="px-3 lg:px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition"
+                            >
+                                <span className="hidden lg:inline">Promeni Ime</span>
+                                <span className="lg:hidden">👤</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </header>
-
-            {/* Floating Quiz Control Button - Always Visible */}
-            <div className="fixed bottom-24 right-4 z-50">
-                {!quizRunning ? (
-                    <button
-                        onClick={handleStartQuiz}
-                        disabled={quizLoading}
-                        className="px-6 py-3 bg-indigo-600 text-white rounded-full shadow-2xl hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed hover:scale-110 transform"
-                    >
-                        {quizLoading ? '🤖 Učitavanje...' : '🤖 Pokreni Kviz'}
-                    </button>
-                ) : (
-                    <button
-                        onClick={handleStopQuiz}
-                        className="px-6 py-3 bg-red-600 text-white rounded-full shadow-2xl hover:bg-red-700 transition animate-pulse hover:scale-110 transform"
-                    >
-                        🛑 Zaustavi Kviz
-                    </button>
-                )}
-            </div>
 
             {/* Leaderboard Modal */}
             <Leaderboard
