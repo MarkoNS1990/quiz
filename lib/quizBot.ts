@@ -267,10 +267,10 @@ export async function handleAnswerCheck(userAnswer: string, username: string): P
   // Check if quiz is not active
   if (!state || !state.is_active) {
     // Only respond if the message looks like an attempt to answer (short, single word)
-    const looksLikeAnswer = userAnswer.trim().length > 0 && 
-                           userAnswer.trim().length < 50 && 
-                           userAnswer.trim().split(/\s+/).length <= 3;
-    
+    const looksLikeAnswer = userAnswer.trim().length > 0 &&
+      userAnswer.trim().length < 50 &&
+      userAnswer.trim().split(/\s+/).length <= 3;
+
     if (looksLikeAnswer) {
       await postBotMessage(`${username}, kviz trenutno nije aktivan! 🤖\nKlikni na "Pokreni Kviz" dugme da započneš igru! 🎮`);
     }
