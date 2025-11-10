@@ -193,7 +193,7 @@ export default function ChatRoom({ username }: { username: string }) {
                     <div className="flex justify-between items-center gap-4">
                         {/* Left: Title & User */}
                         <div className="flex-shrink-0">
-                            <h1 className="text-xl lg:text-2xl font-bold text-gray-800">Čet Soba</h1>
+                            <h1 className="text-xl lg:text-2xl font-bold text-gray-800">🎯 Kosingasi Kviz</h1>
                             <p className="text-xs lg:text-sm text-gray-600">Korisnik: {username}</p>
                         </div>
 
