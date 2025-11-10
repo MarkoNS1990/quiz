@@ -300,7 +300,31 @@ export default function ChatRoom({ username }: { username: string }) {
                                                 {message.username}
                                             </div>
                                             <div className="break-words whitespace-pre-line">
-                                                {message.content}
+                                                {(() => {
+                                                    // Check if message contains image URL
+                                                    const imageMatch = message.content.match(/🖼️ Slika: (https?:\/\/[^\s]+)/);
+                                                    if (imageMatch) {
+                                                        const imageUrl = imageMatch[1];
+                                                        const textBeforeImage = message.content.substring(0, imageMatch.index);
+                                                        const textAfterImage = message.content.substring(imageMatch.index! + imageMatch[0].length);
+                                                        
+                                                        return (
+                                                            <>
+                                                                {textBeforeImage}
+                                                                <div className="my-2">
+                                                                    <img 
+                                                                        src={imageUrl} 
+                                                                        alt="Quiz slika" 
+                                                                        className="rounded-lg max-w-full h-auto"
+                                                                        style={{ maxHeight: '300px' }}
+                                                                    />
+                                                                </div>
+                                                                {textAfterImage}
+                                                            </>
+                                                        );
+                                                    }
+                                                    return message.content;
+                                                })()}
                                             </div>
                                             <div
                                                 className={`text-xs mt-1 ${isBot || isCurrentUser
