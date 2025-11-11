@@ -360,7 +360,7 @@ export async function getLeaderboard(limit: number = 10): Promise<any[]> {
   }
 }
 
-export async function stopQuiz(): Promise<void> {
+export async function stopQuiz(sendMessage: boolean = true): Promise<void> {
   // Clear all active timers
   Object.values(activeTimers).forEach(timers => {
     timers.forEach(timer => clearTimeout(timer));
@@ -373,8 +373,10 @@ export async function stopQuiz(): Promise<void> {
     inactivityTimer = null;
   }
 
-  // Post stop message
-  await postBotMessage('🛑 Kviz je zaustavljen!\n\nKlikni na "Pokreni Kviz" dugme da nastaviš igru! 🎮');
+  // Post stop message only if requested
+  if (sendMessage) {
+    await postBotMessage('🛑 Kviz je zaustavljen!\n\nKlikni na "Pokreni Kviz" dugme da nastaviš igru! 🎮');
+  }
 
   await updateQuizState({
     is_active: false,
@@ -402,7 +404,7 @@ export function resetInactivityTimer(): void {
     const state = await getQuizState();
     if (state?.is_active) {
       await postBotMessage('⏰ Kviz je zaustavljen zbog neaktivnosti (5 minuta).\n\nKlikni na "Pokreni Kviz" dugme da nastaviš igru! 🎮');
-      await stopQuiz();
+      await stopQuiz(false); // Don't send duplicate message
     }
   }, 5 * 60 * 1000); // 5 minutes
 }
