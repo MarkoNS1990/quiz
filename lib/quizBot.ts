@@ -206,24 +206,50 @@ export function checkAnswer(userAnswer: string, correctAnswer: string): { correc
     return { correct: true, similarity: 100 };
   }
 
-  // Check if answer is contained in the correct answer or vice versa
-  if (normalizedCorrect.includes(normalizedUser) || normalizedUser.includes(normalizedCorrect)) {
-    return { correct: true, similarity: 90 };
+  // Split into words for comparison
+  const userWords = normalizedUser.split(' ').filter(w => w.length > 0);
+  const correctWords = normalizedCorrect.split(' ').filter(w => w.length > 0);
+
+  // Single word answers must match exactly (with normalization)
+  if (correctWords.length === 1 && userWords.length === 1) {
+    // Allow minor variations (like missing one letter) but not incomplete words
+    const lengthDiff = Math.abs(userWords[0].length - correctWords[0].length);
+    if (lengthDiff <= 1 && correctWords[0].includes(userWords[0])) {
+      return { correct: true, similarity: 95 };
+    }
+    return { correct: false, similarity: 0 };
   }
 
-  // Calculate similarity (simple word matching)
-  const userWords = normalizedUser.split(' ');
-  const correctWords = normalizedCorrect.split(' ');
+  // Multi-word answers: require all important words to be present
+  if (correctWords.length > 1) {
+    // Count how many correct words are present in user answer
+    const matchedWords = correctWords.filter(cw => 
+      userWords.some(uw => {
+        // Words must be very similar (at least 80% match)
+        const maxLen = Math.max(cw.length, uw.length);
+        const minLen = Math.min(cw.length, uw.length);
+        return (minLen / maxLen >= 0.8) && (cw.includes(uw) || uw.includes(cw));
+      })
+    );
 
+    const matchPercentage = (matchedWords.length / correctWords.length) * 100;
+    
+    // Require at least 80% of words to match for multi-word answers
+    return {
+      correct: matchPercentage >= 80,
+      similarity: Math.round(matchPercentage)
+    };
+  }
+
+  // Fallback: calculate basic similarity
   const matchingWords = userWords.filter(word =>
-    correctWords.some(cw => cw.includes(word) || word.includes(cw))
+    correctWords.some(cw => cw === word)
   );
 
-  const similarity = (matchingWords.length / Math.max(userWords.length, correctWords.length)) * 100;
+  const similarity = (matchingWords.length / correctWords.length) * 100;
 
-  // Consider it correct if 70% similarity
   return {
-    correct: similarity >= 70,
+    correct: similarity >= 90,
     similarity: Math.round(similarity)
   };
 }
@@ -313,13 +339,13 @@ export async function handleAnswerCheck(userAnswer: string, username: string): P
     // Save score to database and get new total
     const totalScore = await saveUserScore(username, points);
 
-    // Message with points
+    // Message with points and correct answer
     let pointsEmoji = '';
     if (points === 3) pointsEmoji = '🏆';
     else if (points === 2) pointsEmoji = '🥈';
     else if (points === 1) pointsEmoji = '🥉';
 
-    await postBotMessage(`🎉 Bravo, ${username}! Dobili ste ${points} ${points === 1 ? 'poen' : points < 5 ? 'poena' : 'poena'}! ${pointsEmoji}\n💯 Ukupno: ${totalScore} ${totalScore === 1 ? 'poen' : totalScore < 5 ? 'poena' : 'poena'}!`);
+    await postBotMessage(`🎉 Bravo, ${username}! Tačan odgovor: **${state.current_answer}**\n\nDobili ste ${points} ${points === 1 ? 'poen' : points < 5 ? 'poena' : 'poena'}! ${pointsEmoji}\n💯 Ukupno: ${totalScore} ${totalScore === 1 ? 'poen' : totalScore < 5 ? 'poena' : 'poena'}!`);
 
     // Clear current question and wait before posting next one
     await updateQuizState({
