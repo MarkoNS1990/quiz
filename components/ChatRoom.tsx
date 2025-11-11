@@ -283,12 +283,19 @@ export default function ChatRoom({ username }: { username: string }) {
                                 Nema poruka. Započni konverzaciju!
                             </div>
                         ) : (
-                            messages.map((message: Message) => {
+                            messages.map((message: Message, index: number) => {
                                 const isBot = message.username.includes('Bot');
                                 const isCurrentUser = message.username === username;
                                 const isHint = isBot && message.content.includes('💡');
                                 const isTimeUp = isBot && message.content.includes('⏰');
                                 const isQuestion = isBot && message.content.includes('📚');
+                                
+                                // Find the last question message (most recent one with 📚)
+                                const lastQuestionIndex = messages.map((m, i) => 
+                                    m.username.includes('Bot') && m.content.includes('📚') ? i : -1
+                                ).filter(i => i !== -1).pop();
+                                
+                                const isLatestQuestion = isQuestion && index === lastQuestionIndex;
 
                                 return (
                                     <div
@@ -341,8 +348,8 @@ export default function ChatRoom({ username }: { username: string }) {
                                                 })()}
                                             </div>
                                             
-                                            {/* Flag Question Button - Only show for quiz questions when quiz is active */}
-                                            {isQuestion && quizRunning && currentQuestionId && (
+                                            {/* Flag Question Button - Only show for the LATEST quiz question when quiz is active */}
+                                            {isLatestQuestion && quizRunning && currentQuestionId && (
                                                 <div className="mt-3 pt-2 border-t border-white/20">
                                                     {flaggedQuestions.has(currentQuestionId) ? (
                                                         <div className="text-xs px-3 py-1 bg-green-500/30 rounded-full text-white">
