@@ -18,6 +18,7 @@ export default function ChatRoom({ username }: { username: string }) {
     const [onlineCount, setOnlineCount] = useState(0);
     const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(new Set());
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const messagesContainerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         // Clean up old messages (older than 30 minutes) on app load
@@ -45,7 +46,9 @@ export default function ChatRoom({ username }: { username: string }) {
     const scrollToBottom = () => {
         // Use setTimeout to ensure content is rendered before scrolling
         setTimeout(() => {
-            messagesEndRef.current?.scrollIntoView({ behavior: 'auto', block: 'end' });
+            if (messagesContainerRef.current) {
+                messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+            }
         }, 100);
     };
 
@@ -274,7 +277,7 @@ export default function ChatRoom({ username }: { username: string }) {
                 {/* Chat Messages */}
                 <div className="bg-white rounded-2xl shadow-xl flex flex-col overflow-hidden">
                     {/* Messages List */}
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                    <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4" style={{ maxHeight: 'calc(100vh - 280px)' }}>
                         {messages.length === 0 ? (
                             <div className="text-center text-gray-500 mt-8">
                                 Nema poruka. Započni konverzaciju!
