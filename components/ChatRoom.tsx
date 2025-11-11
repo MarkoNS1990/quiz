@@ -233,7 +233,7 @@ export default function ChatRoom({ username }: { username: string }) {
                                 onClick={() => setShowOnlineUsers(true)}
                                 className="px-3 lg:px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition font-semibold flex items-center gap-1 lg:gap-2"
                             >
-                                👥 <span className="hidden sm:inline">{onlineCount}</span>
+                                👥 <span>{onlineCount}</span>
                                 <span className="hidden lg:inline">{onlineCount === 1 ? 'korisnik' : 'korisnika'}</span>
                             </button>
 
