@@ -33,9 +33,33 @@ export default function ChatRoom({ username }: { username: string }) {
         // Subscribe to quiz state changes
         const cleanupQuiz = subscribeToQuizState();
 
+        // Handle app visibility change (when app comes back from background)
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                console.log('App became visible - refreshing data');
+                // Reload messages and quiz state when app becomes visible again
+                loadMessages();
+                loadQuizState();
+                scrollToBottom();
+            }
+        };
+
+        // Handle window focus (additional safeguard for iOS/mobile)
+        const handleFocus = () => {
+            console.log('App gained focus - refreshing data');
+            loadMessages();
+            loadQuizState();
+            scrollToBottom();
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('focus', handleFocus);
+
         return () => {
             cleanupMessages();
             cleanupQuiz();
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            window.removeEventListener('focus', handleFocus);
         };
     }, []);
 
