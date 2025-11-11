@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { supabase, Message, cleanupOldMessages } from '@/lib/supabase';
-import { startQuiz, handleAnswerCheck, stopQuiz, getQuizState, resetInactivityTimer } from '@/lib/quizBot';
+import { supabase, Message, cleanupOldMessages, flagQuestionForRemoval } from '@/lib/supabase';
+import { startQuiz, handleAnswerCheck, getQuizState, resetInactivityTimer } from '@/lib/quizBot';
 import Leaderboard from './Leaderboard';
 import OnlineUsers from './OnlineUsers';
 
@@ -12,6 +12,7 @@ export default function ChatRoom({ username }: { username: string }) {
     const [loading, setLoading] = useState(true);
     const [quizLoading, setQuizLoading] = useState(false);
     const [quizRunning, setQuizRunning] = useState(false);
+    const [currentQuestionId, setCurrentQuestionId] = useState<number | null>(null);
     const [showLeaderboard, setShowLeaderboard] = useState(false);
     const [showOnlineUsers, setShowOnlineUsers] = useState(false);
     const [onlineCount, setOnlineCount] = useState(0);
@@ -93,6 +94,7 @@ export default function ChatRoom({ username }: { username: string }) {
         const state = await getQuizState();
         if (state) {
             setQuizRunning(state.is_active);
+            setCurrentQuestionId(state.current_question_id);
         }
     };
 
@@ -111,6 +113,7 @@ export default function ChatRoom({ username }: { username: string }) {
                 (payload: any) => {
                     console.log('Quiz state updated!', payload);
                     setQuizRunning(payload.new.is_active);
+                    setCurrentQuestionId(payload.new.current_question_id);
                 }
             )
             .subscribe((status: string) => {
@@ -167,12 +170,17 @@ export default function ChatRoom({ username }: { username: string }) {
         }
     };
 
-    const handleStopQuiz = async () => {
+    const handleFlagQuestion = async (questionId: number) => {
         try {
-            await stopQuiz();
-            // quizRunning will be updated via real-time subscription
+            const success = await flagQuestionForRemoval(questionId);
+            if (success) {
+                alert('Pitanje je označeno za proveru! ✓');
+            } else {
+                alert('Greška pri označavanju pitanja.');
+            }
         } catch (error) {
-            console.error('Error stopping quiz:', error);
+            console.error('Error flagging question:', error);
+            alert('Greška pri označavanju pitanja.');
         }
     };
 
@@ -204,22 +212,13 @@ export default function ChatRoom({ username }: { username: string }) {
                         {/* Right: Action Buttons */}
                         <div className="flex gap-2 flex-wrap justify-end">
                             {/* Quiz Control Button */}
-                            {!quizRunning ? (
-                                <button
-                                    onClick={handleStartQuiz}
-                                    disabled={quizLoading}
-                                    className="px-3 lg:px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-                                >
-                                    {quizLoading ? '⏳ Učitavanje...' : '🤖 Pokreni Kviz'}
-                                </button>
-                            ) : (
-                                <button
-                                    onClick={handleStopQuiz}
-                                    className="px-3 lg:px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold animate-pulse shadow-lg"
-                                >
-                                    🛑 Zaustavi Kviz
-                                </button>
-                            )}
+                            <button
+                                onClick={handleStartQuiz}
+                                disabled={quizLoading || quizRunning}
+                                className="px-3 lg:px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                            >
+                                {quizLoading ? '⏳ Učitavanje...' : quizRunning ? '🎮 Kviz Aktivan' : '🤖 Pokreni Kviz'}
+                            </button>
 
                             {/* Online Users Button */}
                             <button
@@ -281,6 +280,7 @@ export default function ChatRoom({ username }: { username: string }) {
                                 const isCurrentUser = message.username === username;
                                 const isHint = isBot && message.content.includes('💡');
                                 const isTimeUp = isBot && message.content.includes('⏰');
+                                const isQuestion = isBot && message.content.includes('📚');
 
                                 return (
                                     <div
@@ -331,6 +331,19 @@ export default function ChatRoom({ username }: { username: string }) {
                                                     return message.content;
                                                 })()}
                                             </div>
+                                            
+                                            {/* Flag Question Button - Only show for quiz questions when quiz is active */}
+                                            {isQuestion && quizRunning && currentQuestionId && (
+                                                <div className="mt-3 pt-2 border-t border-white/20">
+                                                    <button
+                                                        onClick={() => handleFlagQuestion(currentQuestionId)}
+                                                        className="text-xs px-3 py-1 bg-white/20 hover:bg-white/30 rounded-full transition-colors backdrop-blur-sm"
+                                                    >
+                                                        🚩 Glupo pitanje
+                                                    </button>
+                                                </div>
+                                            )}
+
                                             <div
                                                 className={`text-xs mt-1 ${isBot || isCurrentUser
                                                     ? isHint

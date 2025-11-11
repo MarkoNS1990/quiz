@@ -19,6 +19,7 @@ export type QuizQuestion = {
   image_url: string | null;
   category: string | null;
   difficulty: 'lako' | 'srednje' | 'teško' | null;
+  remove_question: boolean;
   created_at: string;
 };
 
@@ -59,6 +60,30 @@ export async function cleanupOldMessages(): Promise<boolean> {
     return true;
   } catch (error) {
     console.error('Error calling cleanup function:', error);
+    return false;
+  }
+}
+
+/**
+ * Flags a quiz question as "stupid" for review
+ * This allows users to report questions they think should be removed
+ */
+export async function flagQuestionForRemoval(questionId: number): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('quiz_questions')
+      .update({ remove_question: true })
+      .eq('id', questionId);
+    
+    if (error) {
+      console.error('Error flagging question:', error);
+      return false;
+    }
+    
+    console.log('Question flagged successfully');
+    return true;
+  } catch (error) {
+    console.error('Error flagging question:', error);
     return false;
   }
 }

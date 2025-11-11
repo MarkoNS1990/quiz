@@ -67,9 +67,11 @@ export async function updateQuizState(updates: Partial<QuizState>): Promise<bool
 
 export async function getRandomQuizQuestion(): Promise<QuizQuestion | null> {
   try {
+    // Get all questions that are not flagged for removal
     const { data, error } = await supabase
       .from('quiz_questions')
       .select('*')
+      .eq('remove_question', false)
       .order('id', { ascending: false });
 
     if (error) throw error;
@@ -395,14 +397,14 @@ export function resetInactivityTimer(): void {
     clearTimeout(inactivityTimer);
   }
 
-  // Set new timer for 3 minutes
+  // Set new timer for 5 minutes
   inactivityTimer = setTimeout(async () => {
     const state = await getQuizState();
     if (state?.is_active) {
-      await postBotMessage('⏰ Kviz je zaustavljen zbog neaktivnosti (3 minute).');
+      await postBotMessage('⏰ Kviz je zaustavljen zbog neaktivnosti (5 minuta).\n\nKlikni na "Pokreni Kviz" dugme da nastaviš igru! 🎮');
       await stopQuiz();
     }
-  }, 3 * 60 * 1000); // 3 minutes
+  }, 5 * 60 * 1000); // 5 minutes
 }
 
 // Clear inactivity timer
