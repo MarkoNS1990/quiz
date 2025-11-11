@@ -10,7 +10,10 @@ ON quiz_questions(remove_question)
 WHERE remove_question = FALSE;
 
 -- Add RLS policy to allow anyone to update the remove_question field
-CREATE POLICY IF NOT EXISTS "Anyone can flag questions for removal"
+-- Drop policy if it exists, then create it
+DROP POLICY IF EXISTS "Anyone can flag questions for removal" ON quiz_questions;
+
+CREATE POLICY "Anyone can flag questions for removal"
   ON quiz_questions FOR UPDATE
   USING (true)
   WITH CHECK (true);
