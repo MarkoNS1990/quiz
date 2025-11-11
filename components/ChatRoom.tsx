@@ -43,7 +43,10 @@ export default function ChatRoom({ username }: { username: string }) {
     }, [messages]);
 
     const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        // Use setTimeout to ensure content is rendered before scrolling
+        setTimeout(() => {
+            messagesEndRef.current?.scrollIntoView({ behavior: 'auto', block: 'end' });
+        }, 100);
     };
 
     const loadMessages = async () => {
@@ -324,6 +327,7 @@ export default function ChatRoom({ username }: { username: string }) {
                                                                         alt="Quiz slika"
                                                                         className="rounded-lg max-w-full h-auto shadow-md"
                                                                         style={{ maxHeight: '300px' }}
+                                                                        onLoad={scrollToBottom}
                                                                     />
                                                                 </div>
                                                                 {parts[1]}
