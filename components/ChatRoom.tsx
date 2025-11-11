@@ -16,6 +16,7 @@ export default function ChatRoom({ username }: { username: string }) {
     const [showLeaderboard, setShowLeaderboard] = useState(false);
     const [showOnlineUsers, setShowOnlineUsers] = useState(false);
     const [onlineCount, setOnlineCount] = useState(0);
+    const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(new Set());
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -174,13 +175,14 @@ export default function ChatRoom({ username }: { username: string }) {
         try {
             const success = await flagQuestionForRemoval(questionId);
             if (success) {
-                alert('Pitanje je označeno za proveru! ✓');
+                // Add to flagged set for immediate UI feedback
+                setFlaggedQuestions(prev => new Set(prev).add(questionId));
+                console.log('✓ Pitanje je označeno za proveru!');
             } else {
-                alert('Greška pri označavanju pitanja.');
+                console.error('✗ Greška pri označavanju pitanja.');
             }
         } catch (error) {
             console.error('Error flagging question:', error);
-            alert('Greška pri označavanju pitanja.');
         }
     };
 
@@ -335,12 +337,18 @@ export default function ChatRoom({ username }: { username: string }) {
                                             {/* Flag Question Button - Only show for quiz questions when quiz is active */}
                                             {isQuestion && quizRunning && currentQuestionId && (
                                                 <div className="mt-3 pt-2 border-t border-white/20">
-                                                    <button
-                                                        onClick={() => handleFlagQuestion(currentQuestionId)}
-                                                        className="text-xs px-3 py-1 bg-white/20 hover:bg-white/30 rounded-full transition-colors backdrop-blur-sm"
-                                                    >
-                                                        🚩 Glupo pitanje
-                                                    </button>
+                                                    {flaggedQuestions.has(currentQuestionId) ? (
+                                                        <div className="text-xs px-3 py-1 bg-green-500/30 rounded-full text-white">
+                                                            ✓ Označeno
+                                                        </div>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => handleFlagQuestion(currentQuestionId)}
+                                                            className="text-xs px-3 py-1 bg-white/20 hover:bg-white/30 rounded-full transition-colors backdrop-blur-sm"
+                                                        >
+                                                            🚩 Glupo pitanje
+                                                        </button>
+                                                    )}
                                                 </div>
                                             )}
 
