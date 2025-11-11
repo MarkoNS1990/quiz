@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { supabase, Message, cleanupOldMessages, flagQuestionForRemoval } from '@/lib/supabase';
-import { startQuiz, handleAnswerCheck, getQuizState, resetInactivityTimer, stopQuiz } from '@/lib/quizBot';
+import { startQuiz, handleAnswerCheck, getQuizState, resetInactivityTimer, stopQuiz, restartQuiz } from '@/lib/quizBot';
 import Leaderboard from './Leaderboard';
 import OnlineUsers from './OnlineUsers';
 
@@ -247,6 +247,19 @@ export default function ChatRoom({ username }: { username: string }) {
         }
     };
 
+    const handleRestartQuiz = async () => {
+        setQuizLoading(true);
+        try {
+            await restartQuiz();
+            // quizRunning will be updated via real-time subscription
+        } catch (error) {
+            console.error('Error restarting quiz:', error);
+            alert('Greška pri restartovanju kviza');
+        } finally {
+            setQuizLoading(false);
+        }
+    };
+
     const handleChangeUsername = () => {
         localStorage.removeItem('chatUsername');
         window.location.reload();
@@ -282,6 +295,17 @@ export default function ChatRoom({ username }: { username: string }) {
                             >
                                 {quizLoading ? '⏳ Učitavanje...' : quizRunning ? '🎮 Kviz Aktivan' : '🤖 Pokreni Kviz'}
                             </button>
+
+                            {/* Restart Quiz Button - Only show when quiz is running */}
+                            {quizRunning && (
+                                <button
+                                    onClick={handleRestartQuiz}
+                                    disabled={quizLoading}
+                                    className="px-3 lg:px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                                >
+                                    {quizLoading ? '⏳' : '🔄 Restart'}
+                                </button>
+                            )}
 
                             {/* Online Users Button */}
                             <button
