@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { supabase, Message, cleanupOldMessages, flagQuestionForRemoval } from '@/lib/supabase';
-import { startQuiz, handleAnswerCheck, getQuizState, resetInactivityTimer, restartQuiz } from '@/lib/quizBot';
+import { startQuiz, handleAnswerCheck, getQuizState, resetInactivityTimer, stopQuiz } from '@/lib/quizBot';
 import Leaderboard from './Leaderboard';
 import OnlineUsers from './OnlineUsers';
 
@@ -42,6 +42,23 @@ export default function ChatRoom({ username }: { username: string }) {
     useEffect(() => {
         scrollToBottom();
     }, [messages]);
+
+    // Auto-stop quiz when no players are online
+    useEffect(() => {
+        let timeoutId: NodeJS.Timeout;
+
+        if (onlineCount === 0 && quizRunning) {
+            // Wait 10 seconds before stopping (in case someone is refreshing)
+            timeoutId = setTimeout(async () => {
+                console.log('No players online - stopping quiz');
+                await stopQuiz(false); // Don't send message since no one is there
+            }, 10000); // 10 seconds delay
+        }
+
+        return () => {
+            if (timeoutId) clearTimeout(timeoutId);
+        };
+    }, [onlineCount, quizRunning]);
 
     const scrollToBottom = () => {
         // Use setTimeout to ensure content is rendered before scrolling
@@ -303,12 +320,12 @@ export default function ChatRoom({ username }: { username: string }) {
                                 const isHint = isBot && message.content.includes('💡');
                                 const isTimeUp = isBot && message.content.includes('⏰');
                                 const isQuestion = isBot && message.content.includes('📚');
-                                
+
                                 // Find the last question message (most recent one with 📚)
-                                const lastQuestionIndex = messages.map((m, i) => 
+                                const lastQuestionIndex = messages.map((m, i) =>
                                     m.username.includes('Bot') && m.content.includes('📚') ? i : -1
                                 ).filter(i => i !== -1).pop();
-                                
+
                                 const isLatestQuestion = isQuestion && index === lastQuestionIndex;
 
                                 return (
@@ -361,7 +378,7 @@ export default function ChatRoom({ username }: { username: string }) {
                                                     return message.content;
                                                 })()}
                                             </div>
-                                            
+
                                             {/* Flag Question Button - Only show for the LATEST quiz question when quiz is active */}
                                             {isLatestQuestion && quizRunning && currentQuestionId && (
                                                 <div className="mt-3 pt-2 border-t border-white/20">
