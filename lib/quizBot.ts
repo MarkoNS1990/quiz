@@ -387,7 +387,21 @@ export async function stopQuiz(sendMessage: boolean = true): Promise<void> {
 }
 
 export async function startQuiz(): Promise<void> {
+  // Clear any existing timers before starting
+  Object.values(activeTimers).forEach(timers => {
+    timers.forEach(timer => clearTimeout(timer));
+  });
+  activeTimers = {};
+  
+  // Clear any existing inactivity timer
+  if (inactivityTimer) {
+    clearTimeout(inactivityTimer);
+    inactivityTimer = null;
+  }
+
+  // Post question and start quiz
   await postQuizQuestion();
+  
   // Start inactivity timer
   resetInactivityTimer();
 }
@@ -397,14 +411,19 @@ export function resetInactivityTimer(): void {
   // Clear existing timer
   if (inactivityTimer) {
     clearTimeout(inactivityTimer);
+    inactivityTimer = null;
   }
 
   // Set new timer for 5 minutes
   inactivityTimer = setTimeout(async () => {
-    const state = await getQuizState();
-    if (state?.is_active) {
-      await postBotMessage('⏰ Kviz je zaustavljen zbog neaktivnosti (5 minuta).\n\nKlikni na "Pokreni Kviz" dugme da nastaviš igru! 🎮');
-      await stopQuiz(false); // Don't send duplicate message
+    try {
+      const state = await getQuizState();
+      if (state?.is_active) {
+        await postBotMessage('⏰ Kviz je zaustavljen zbog neaktivnosti (5 minuta).\n\nKlikni na "Pokreni Kviz" dugme da nastaviš igru! 🎮');
+        await stopQuiz(false); // Don't send duplicate message
+      }
+    } catch (error) {
+      console.error('Error in inactivity timer:', error);
     }
   }, 5 * 60 * 1000); // 5 minutes
 }
