@@ -406,6 +406,22 @@ export async function startQuiz(): Promise<void> {
   resetInactivityTimer();
 }
 
+// Restart quiz (secret command) - stops and immediately starts again
+export async function restartQuiz(): Promise<void> {
+  console.log('🔄 Restarting quiz...');
+  
+  // Stop quiz silently (no message)
+  await stopQuiz(false);
+  
+  // Wait a moment to ensure state is cleared
+  await new Promise(resolve => setTimeout(resolve, 500));
+  
+  // Start quiz
+  await startQuiz();
+  
+  console.log('✅ Quiz restarted successfully!');
+}
+
 // Reset inactivity timer - call this when user sends a message
 export function resetInactivityTimer(): void {
   // Clear existing timer

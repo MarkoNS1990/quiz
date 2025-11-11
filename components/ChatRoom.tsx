@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { supabase, Message, cleanupOldMessages, flagQuestionForRemoval } from '@/lib/supabase';
-import { startQuiz, handleAnswerCheck, getQuizState, resetInactivityTimer } from '@/lib/quizBot';
+import { startQuiz, handleAnswerCheck, getQuizState, resetInactivityTimer, restartQuiz } from '@/lib/quizBot';
 import Leaderboard from './Leaderboard';
 import OnlineUsers from './OnlineUsers';
 
@@ -138,6 +138,20 @@ export default function ChatRoom({ username }: { username: string }) {
         if (!newMessage.trim()) return;
 
         const messageContent = newMessage.trim();
+
+        // SECRET COMMAND: !restart - Restarts quiz without showing in chat
+        if (messageContent === '!restart') {
+            setNewMessage('');
+            try {
+                console.log('🔄 Secret restart command triggered by:', username);
+                await restartQuiz();
+                console.log('✅ Restart successful!');
+            } catch (error) {
+                console.error('Error restarting quiz:', error);
+                alert('Greška pri restartovanju kviza');
+            }
+            return; // Don't send to chat
+        }
 
         try {
             const { error } = await supabase.from('messages').insert({
