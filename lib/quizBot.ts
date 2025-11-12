@@ -221,19 +221,24 @@ function setupHintTimers(questionId: number, answer: string) {
 }
 
 // End question and show summary of all correct answers
-async function endQuestion(correctAnswer: string, questionId: number): Promise<void> {
+async function endQuestion(correctAnswer: string, questionId: number, allAnswered: boolean = false): Promise<void> {
   // Fetch all answers from database
   const answers = await getQuestionAnswers(questionId);
   
-  console.log('📊 Ending question. Total correct answers:', answers.length);
+  console.log('📊 Ending question. Total correct answers:', answers.length, 'All answered:', allAnswered);
   console.log('📊 Answers:', answers);
   
   // Show correct answer and summary
   if (answers.length === 0) {
     await postBotMessage(`⏰ Vreme je isteklo! Niko nije pogodio.\n\nTačan odgovor je: **${correctAnswer}**`);
   } else {
-    // Create summary message
-    let summary = `⏰ Vreme je isteklo! Tačan odgovor: **${correctAnswer}**\n\n📊 **Rezultati:**\n`;
+    // Create summary message - different message if all answered vs timeout
+    let summary = '';
+    if (allAnswered) {
+      summary = `🎉 **Svi igrači su tačno odgovorili, bravo!**\n\nTačan odgovor: **${correctAnswer}**\n\n📊 **Rezultati:**\n`;
+    } else {
+      summary = `⏰ Vreme je isteklo! Tačan odgovor: **${correctAnswer}**\n\n📊 **Rezultati:**\n`;
+    }
     
     // Sort by points (highest first) then by answered_at (fastest first)
     const sortedAnswers = answers.sort((a, b) => {
@@ -511,7 +516,7 @@ export async function handleAnswerCheck(userAnswer: string, username: string, on
       setTimeout(async () => {
         const currentState = await getQuizState();
         if (currentState?.current_question_id === state.current_question_id && currentState.is_active) {
-          await endQuestion(state.current_answer, state.current_question_id);
+          await endQuestion(state.current_answer, state.current_question_id, true); // true = all answered
         }
       }, 2000);
     }
