@@ -185,6 +185,9 @@ function setupHintTimers(questionId: number, answer: string) {
 
 // End question and show summary of all correct answers
 async function endQuestion(correctAnswer: string): Promise<void> {
+  console.log('📊 Ending question. Total correct answers:', currentQuestionAnswers.size);
+  console.log('📊 Answers:', Array.from(currentQuestionAnswers.entries()));
+  
   // Show correct answer and summary
   if (currentQuestionAnswers.size === 0) {
     await postBotMessage(`⏰ Vreme je isteklo! Niko nije pogodio.\n\nTačan odgovor je: **${correctAnswer}**`);
@@ -200,10 +203,28 @@ async function endQuestion(correctAnswer: string): Promise<void> {
         }
         return a[1].timestamp - b[1].timestamp;
       });
+    
+    console.log('📊 Sorted answers:', sortedAnswers);
+
+    // Fetch total points for all users who answered
+    const usernames = sortedAnswers.map(([username]) => username);
+    const { data: userScores, error } = await supabase
+      .from('user_scores')
+      .select('username, total_points')
+      .in('username', usernames);
+
+    // Create a map of username -> total_points
+    const totalPointsMap = new Map<string, number>();
+    if (userScores && !error) {
+      userScores.forEach(score => {
+        totalPointsMap.set(score.username, score.total_points);
+      });
+    }
 
     sortedAnswers.forEach(([username, data], index) => {
       const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '✅';
-      summary += `${medal} **${username}** - ${data.points} ${data.points === 1 ? 'poen' : 'poena'}\n`;
+      const totalPoints = totalPointsMap.get(username) || 0;
+      summary += `${medal} **${username}** +${data.points} ${data.points === 1 ? 'poen' : 'poena'} (${totalPoints})\n`;
     });
 
     await postBotMessage(summary);
