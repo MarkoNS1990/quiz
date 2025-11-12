@@ -398,6 +398,35 @@ async function saveUserScore(username: string, points: number): Promise<number> 
   }
 }
 
+// Get count of online users from presence
+async function getOnlineUsersCount(): Promise<number> {
+  try {
+    const channel = supabase.channel('online-users-check');
+    await channel.subscribe();
+    
+    // Wait a bit for presence to sync
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    const presenceState = channel.presenceState();
+    const onlineUsers = new Set<string>();
+    
+    Object.keys(presenceState).forEach((key) => {
+      const presences = presenceState[key] as any[];
+      presences.forEach((presence) => {
+        if (presence.username) {
+          onlineUsers.add(presence.username);
+        }
+      });
+    });
+    
+    supabase.removeChannel(channel);
+    return onlineUsers.size;
+  } catch (error) {
+    console.error('Error getting online users count:', error);
+    return 0;
+  }
+}
+
 export async function handleAnswerCheck(userAnswer: string, username: string): Promise<void> {
   const state = await getQuizState();
 
@@ -454,6 +483,31 @@ export async function handleAnswerCheck(userAnswer: string, username: string): P
     
     // Reset inactivity timer since there's activity
     resetInactivityTimer();
+
+    // Check if all online users have answered
+    const onlineCount = await getOnlineUsersCount();
+    const allAnswers = await getQuestionAnswers(state.current_question_id);
+    
+    console.log(`👥 Online users: ${onlineCount}, Answered: ${allAnswers.length}`);
+    
+    // If all online users answered, end question immediately
+    if (onlineCount > 0 && allAnswers.length >= onlineCount) {
+      console.log('🎉 All online users answered! Moving to next question...');
+      
+      // Clear existing timers for this question
+      if (activeTimers[state.current_question_id]) {
+        activeTimers[state.current_question_id].forEach(timer => clearTimeout(timer));
+        delete activeTimers[state.current_question_id];
+      }
+      
+      // Wait 2 seconds to show the last answer, then end question
+      setTimeout(async () => {
+        const currentState = await getQuizState();
+        if (currentState?.current_question_id === state.current_question_id && currentState.is_active) {
+          await endQuestion(state.current_answer, state.current_question_id);
+        }
+      }, 2000);
+    }
 
   } else if (result.similarity > 40) {
     // Close but not quite - only notify the user privately would be ideal, but we'll skip for now
