@@ -515,7 +515,7 @@ export async function handleAnswerCheck(userAnswer: string, username: string, on
       // Wait 2 seconds to show the last answer, then end question
       setTimeout(async () => {
         const currentState = await getQuizState();
-        if (currentState?.current_question_id === state.current_question_id && currentState.is_active) {
+        if (currentState?.current_question_id === state.current_question_id && currentState.is_active && state.current_question_id) {
           const answer = state.current_answer || currentState.current_answer || 'Nepoznato';
           await endQuestion(answer, state.current_question_id, true); // true = all answered
         }
