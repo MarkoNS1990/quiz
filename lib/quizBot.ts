@@ -67,12 +67,21 @@ export async function updateQuizState(updates: Partial<QuizState>): Promise<bool
 
 export async function getRandomQuizQuestion(): Promise<QuizQuestion | null> {
   try {
-    // Get all questions that are not flagged for removal
-    const { data, error } = await supabase
+    // Get current quiz state to check for category filter
+    const state = await getQuizState();
+    const selectedCategories = state?.selected_categories;
+
+    let query = supabase
       .from('quiz_questions')
       .select('*')
-      .eq('remove_question', false)
-      .order('id', { ascending: false });
+      .eq('remove_question', false);
+
+    // If categories are selected, filter by them
+    if (selectedCategories && selectedCategories.length > 0) {
+      query = query.in('custom_category', selectedCategories);
+    }
+
+    const { data, error } = await query.order('id', { ascending: false });
 
     if (error) throw error;
 
@@ -471,10 +480,11 @@ export async function stopQuiz(sendMessage: boolean = true): Promise<void> {
     current_question_id: null,
     current_answer: null,
     question_start_time: null,
+    selected_categories: null,
   });
 }
 
-export async function startQuiz(): Promise<void> {
+export async function startQuiz(selectedCategories?: string[] | null): Promise<void> {
   // Clear any existing timers before starting
   Object.values(activeTimers).forEach(timers => {
     timers.forEach(timer => clearTimeout(timer));
@@ -487,6 +497,20 @@ export async function startQuiz(): Promise<void> {
     inactivityTimer = null;
   }
 
+  // Update quiz state with selected categories
+  await updateQuizState({ 
+    is_active: true,
+    selected_categories: selectedCategories || null
+  });
+
+  // Build category message
+  let categoryMessage = '';
+  if (selectedCategories && selectedCategories.length > 0) {
+    categoryMessage = `\n📂 **Oblasti:** ${selectedCategories.join(', ')}`;
+  }
+
+  await postBotMessage(`🎮 Kviz počinje! Pripremite se... 🎯${categoryMessage}`);
+
   // Post question and start quiz
   await postQuizQuestion();
   
@@ -498,14 +522,18 @@ export async function startQuiz(): Promise<void> {
 export async function restartQuiz(): Promise<void> {
   console.log('🔄 Restarting quiz...');
   
+  // Get current categories before stopping
+  const currentState = await getQuizState();
+  const currentCategories = currentState?.selected_categories;
+  
   // Stop quiz silently (no message)
   await stopQuiz(false);
   
   // Wait a moment to ensure state is cleared
   await new Promise(resolve => setTimeout(resolve, 500));
   
-  // Start quiz
-  await startQuiz();
+  // Start quiz with same categories
+  await startQuiz(currentCategories);
   
   console.log('✅ Quiz restarted successfully!');
 }

@@ -20,6 +20,7 @@ export type QuizQuestion = {
   category: string | null;
   difficulty: 'lako' | 'srednje' | 'teško' | null;
   remove_question: boolean;
+  custom_category: string | null;
   created_at: string;
 };
 
@@ -29,6 +30,7 @@ export type QuizState = {
   current_question_id: number | null;
   current_answer: string | null;
   question_start_time: string | null;
+  selected_categories: string[] | null;
   updated_at: string;
 };
 
@@ -176,5 +178,36 @@ export async function clearQuestionAnswers(questionId: number): Promise<boolean>
   } catch (error) {
     console.error('Error clearing answers:', error);
     return false;
+  }
+}
+
+/**
+ * Get all unique custom categories from quiz questions
+ */
+export async function getCustomCategories(): Promise<string[]> {
+  try {
+    const { data, error } = await supabase
+      .from('quiz_questions')
+      .select('custom_category')
+      .not('custom_category', 'is', null)
+      .not('remove_question', 'eq', true);
+    
+    if (error) {
+      console.error('Error fetching custom categories:', error);
+      return [];
+    }
+    
+    // Get unique categories
+    const categories = new Set<string>();
+    data?.forEach((item: any) => {
+      if (item.custom_category) {
+        categories.add(item.custom_category);
+      }
+    });
+    
+    return Array.from(categories).sort();
+  } catch (error) {
+    console.error('Error fetching custom categories:', error);
+    return [];
   }
 }

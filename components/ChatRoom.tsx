@@ -6,6 +6,7 @@ import { startQuiz, handleAnswerCheck, getQuizState, resetInactivityTimer, stopQ
 import { checkAndHandleTimeout } from '@/lib/checkQuizTimeout';
 import Leaderboard from './Leaderboard';
 import OnlineUsers from './OnlineUsers';
+import CategorySelector from './CategorySelector';
 
 export default function ChatRoom({ username }: { username: string }) {
     const [messages, setMessages] = useState<Message[]>([]);
@@ -227,10 +228,10 @@ export default function ChatRoom({ username }: { username: string }) {
         }
     };
 
-    const handleStartQuiz = async () => {
+    const handleStartQuiz = async (selectedCategories?: string[] | null) => {
         setQuizLoading(true);
         try {
-            await startQuiz();
+            await startQuiz(selectedCategories);
             // quizRunning will be updated via real-time subscription
         } catch (error) {
             console.error('Error triggering quiz bot:', error);
@@ -295,14 +296,11 @@ export default function ChatRoom({ username }: { username: string }) {
 
                         {/* Right: Action Buttons */}
                         <div className="flex gap-2 flex-wrap justify-end">
-                            {/* Quiz Control Button */}
-                            <button
-                                onClick={handleStartQuiz}
+                            {/* Category Selector & Quiz Control */}
+                            <CategorySelector 
+                                onStartQuiz={handleStartQuiz}
                                 disabled={quizLoading || quizRunning}
-                                className="px-3 lg:px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-                            >
-                                {quizLoading ? '⏳ Učitavanje...' : quizRunning ? '🎮 Kviz Aktivan' : '🤖 Pokreni Kviz'}
-                            </button>
+                            />
 
                             {/* Restart Quiz Button - Only show when quiz is running */}
                             {quizRunning && (
