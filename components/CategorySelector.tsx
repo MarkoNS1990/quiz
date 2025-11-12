@@ -19,8 +19,10 @@ export default function CategorySelector({ onStartQuiz, disabled }: CategorySele
   }, []);
 
   const loadCategories = async () => {
+    console.log('🔄 CategorySelector: Loading categories...');
     setLoading(true);
     const cats = await getCustomCategories();
+    console.log('📦 CategorySelector: Received categories:', cats);
     setCategories(cats);
     setLoading(false);
   };

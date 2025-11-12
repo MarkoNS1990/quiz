@@ -186,28 +186,43 @@ export async function clearQuestionAnswers(questionId: number): Promise<boolean>
  */
 export async function getCustomCategories(): Promise<string[]> {
   try {
+    console.log('🔍 Fetching custom categories...');
+    
     const { data, error } = await supabase
       .from('quiz_questions')
       .select('custom_category')
       .not('custom_category', 'is', null)
       .not('remove_question', 'eq', true);
     
+    console.log('📊 Raw data from DB:', data);
+    console.log('❌ Error (if any):', error);
+    
     if (error) {
-      console.error('Error fetching custom categories:', error);
+      console.error('❌ Error fetching custom categories:', error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
+      return [];
+    }
+    
+    if (!data || data.length === 0) {
+      console.warn('⚠️ No data returned from quiz_questions');
       return [];
     }
     
     // Get unique categories
     const categories = new Set<string>();
     data?.forEach((item: any) => {
+      console.log('Processing item:', item);
       if (item.custom_category) {
         categories.add(item.custom_category);
       }
     });
     
-    return Array.from(categories).sort();
+    const result = Array.from(categories).sort();
+    console.log('✅ Final categories:', result);
+    
+    return result;
   } catch (error) {
-    console.error('Error fetching custom categories:', error);
+    console.error('❌ Exception fetching custom categories:', error);
     return [];
   }
 }
