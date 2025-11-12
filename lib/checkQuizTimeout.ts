@@ -47,6 +47,12 @@ export async function checkAndHandleTimeout(): Promise<void> {
       const correctAnswer = state.current_answer || 'Nepoznato';
       const questionId = state.current_question_id;
       
+      // Safety check - should never be null here, but TypeScript requires it
+      if (!questionId) {
+        console.error('⚠️ Question ID is null, cannot fetch answers');
+        return;
+      }
+      
       // Fetch all answers from database
       const answers = await getQuestionAnswers(questionId);
       
@@ -143,6 +149,12 @@ export async function checkAndHandleTimeout(): Promise<void> {
           const latestState = await getQuizState();
           const finalAnswer = latestState?.current_answer || correctAnswer;
           const finalQuestionId = state.current_question_id;
+          
+          // Safety check - should never be null here, but TypeScript requires it
+          if (!finalQuestionId) {
+            console.error('⚠️ Question ID is null, cannot fetch answers');
+            return;
+          }
           
           // Fetch all answers from database
           const answers = await getQuestionAnswers(finalQuestionId);
