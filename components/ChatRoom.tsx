@@ -451,13 +451,22 @@ export default function ChatRoom({ username }: { username: string }) {
                                             </div>
                                             <div className="break-words whitespace-pre-line">
                                                 {(() => {
-                                                    // Auto-detect image URLs (flagcdn.com or common image extensions)
-                                                    const imageMatch = message.content.match(/(https?:\/\/[^\s]+\.(?:png|jpg|jpeg|gif|webp))/i) ||
+                                                    // Auto-detect image URLs (including SVG for Wikipedia)
+                                                    const imageMatch = message.content.match(/(https?:\/\/[^\s]+\.(?:png|jpg|jpeg|gif|webp|svg))/i) ||
                                                         message.content.match(/(https?:\/\/flagcdn\.com[^\s]+)/);
 
                                                     if (imageMatch) {
                                                         const imageUrl = imageMatch[1];
                                                         const parts = message.content.split(imageUrl);
+                                                        
+                                                        // Check if it's a Wikipedia/Wikimedia image
+                                                        const isWikipediaImage = imageUrl.includes('wikipedia.org') || 
+                                                                                  imageUrl.includes('wikimedia.org');
+                                                        
+                                                        // Wikipedia images are smaller
+                                                        const maxHeight = isWikipediaImage ? '200px' : '300px';
+                                                        
+                                                        console.log('🖼️ Image detected:', imageUrl, 'Is Wikipedia:', isWikipediaImage);
 
                                                         return (
                                                             <>
@@ -467,8 +476,12 @@ export default function ChatRoom({ username }: { username: string }) {
                                                                         src={imageUrl}
                                                                         alt="Quiz slika"
                                                                         className="rounded-lg max-w-full h-auto shadow-md"
-                                                                        style={{ maxHeight: '300px' }}
+                                                                        style={{ maxHeight }}
                                                                         onLoad={scrollToBottom}
+                                                                        onError={(e) => {
+                                                                            console.error('❌ Image failed to load:', imageUrl);
+                                                                            e.currentTarget.style.display = 'none';
+                                                                        }}
                                                                     />
                                                                 </div>
                                                                 {parts[1]}
