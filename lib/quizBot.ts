@@ -115,6 +115,9 @@ Napiši tačan odgovor! ✍️
 
     // Post the quiz question to chat
     await postBotMessage(quizMessage);
+    
+    // Reset inactivity timer when posting new question
+    resetInactivityTimer();
 
     // Update global quiz state
     await updateQuizState({
@@ -205,6 +208,9 @@ async function endQuestion(correctAnswer: string): Promise<void> {
 
     await postBotMessage(summary);
   }
+  
+  // Reset inactivity timer before moving to next question
+  resetInactivityTimer();
 
   // Clear current question
   await updateQuizState({
@@ -378,6 +384,9 @@ export async function handleAnswerCheck(userAnswer: string, username: string): P
     else if (points === 1) pointsEmoji = '🥉';
 
     await postBotMessage(`✅ **${username}** je pogodio! +${points} ${points === 1 ? 'poen' : 'poena'} ${pointsEmoji}`);
+    
+    // Reset inactivity timer since there's activity
+    resetInactivityTimer();
 
   } else if (result.similarity > 40) {
     // Close but not quite - only notify the user privately would be ideal, but we'll skip for now
