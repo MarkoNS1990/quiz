@@ -15,6 +15,7 @@ export default function ChatRoom({ username }: { username: string }) {
     const [quizLoading, setQuizLoading] = useState(false);
     const [quizRunning, setQuizRunning] = useState(false);
     const [currentQuestionId, setCurrentQuestionId] = useState<number | null>(null);
+    const [selectedCategories, setSelectedCategories] = useState<string[] | null>(null);
     const [showLeaderboard, setShowLeaderboard] = useState(false);
     const [showOnlineUsers, setShowOnlineUsers] = useState(false);
     const [onlineCount, setOnlineCount] = useState(0);
@@ -150,9 +151,10 @@ export default function ChatRoom({ username }: { username: string }) {
     const loadQuizState = async () => {
         const state = await getQuizState();
         if (state) {
-            console.log('🎮 Quiz state loaded:', { is_active: state.is_active, current_question_id: state.current_question_id });
+            console.log('🎮 Quiz state loaded:', { is_active: state.is_active, current_question_id: state.current_question_id, selected_categories: state.selected_categories });
             setQuizRunning(state.is_active);
             setCurrentQuestionId(state.current_question_id);
+            setSelectedCategories(state.selected_categories);
         }
     };
 
@@ -174,6 +176,7 @@ export default function ChatRoom({ username }: { username: string }) {
                     console.log('🎮 New quiz state - is_active:', isActive, 'quizRunning will be set to:', isActive);
                     setQuizRunning(isActive);
                     setCurrentQuestionId(payload.new.current_question_id);
+                    setSelectedCategories(payload.new.selected_categories);
                 }
             )
             .subscribe((status: string) => {
@@ -293,7 +296,19 @@ export default function ChatRoom({ username }: { username: string }) {
                     <div className="flex justify-between items-center gap-4">
                         {/* Left: Title & User */}
                         <div className="flex-shrink-0">
-                            <h1 className="text-xl lg:text-2xl font-bold text-gray-800">🎯 Kosingasi Kviz</h1>
+                            <h1 className="text-xl lg:text-2xl font-bold text-gray-800">
+                                🎯 Kosingasi Kviz
+                                {quizRunning && selectedCategories && selectedCategories.length > 0 && (
+                                    <span className="text-sm lg:text-base text-blue-600 ml-2">
+                                        📂 {selectedCategories.join(', ')}
+                                    </span>
+                                )}
+                                {quizRunning && (!selectedCategories || selectedCategories.length === 0) && (
+                                    <span className="text-sm lg:text-base text-green-600 ml-2">
+                                        📖 Sve Oblasti
+                                    </span>
+                                )}
+                            </h1>
                             <p className="text-xs lg:text-sm text-gray-600">Korisnik: {username}</p>
                         </div>
 
