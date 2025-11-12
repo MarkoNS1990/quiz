@@ -1,4 +1,4 @@
-import { supabase, QuizState } from './supabase';
+import { supabase, QuizState, getQuestionAnswers, clearQuestionAnswers } from './supabase';
 import { postBotMessage, getQuizState, postQuizQuestion } from './quizBot';
 
 // Lock to prevent multiple simultaneous checks
@@ -47,8 +47,50 @@ export async function checkAndHandleTimeout(): Promise<void> {
       const correctAnswer = state.current_answer || 'Nepoznato';
       const questionId = state.current_question_id;
       
-      // Post timeout message
-      await postBotMessage(`⏰ Vreme je isteklo! Tačan odgovor je: **${correctAnswer}**`);
+      // Fetch all answers from database
+      const answers = await getQuestionAnswers(questionId);
+      
+      // Show correct answer and summary
+      if (answers.length === 0) {
+        await postBotMessage(`⏰ Vreme je isteklo! Niko nije pogodio.\n\nTačan odgovor je: **${correctAnswer}**`);
+      } else {
+        // Create summary message
+        let summary = `⏰ Vreme je isteklo! Tačan odgovor: **${correctAnswer}**\n\n📊 **Rezultati:**\n`;
+        
+        // Sort by points (highest first) then by answered_at (fastest first)
+        const sortedAnswers = answers.sort((a, b) => {
+          if (b.points !== a.points) {
+            return b.points - a.points;
+          }
+          return new Date(a.answered_at).getTime() - new Date(b.answered_at).getTime();
+        });
+
+        // Fetch total points for all users who answered
+        const usernames = sortedAnswers.map(answer => answer.username);
+        const { data: userScores, error: scoresError } = await supabase
+          .from('user_scores')
+          .select('username, total_points')
+          .in('username', usernames);
+
+        // Create a map of username -> total_points
+        const totalPointsMap = new Map<string, number>();
+        if (userScores && !scoresError) {
+          userScores.forEach(score => {
+            totalPointsMap.set(score.username, score.total_points);
+          });
+        }
+
+        sortedAnswers.forEach((answer, index) => {
+          const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '✅';
+          const totalPoints = totalPointsMap.get(answer.username) || 0;
+          summary += `${medal} **${answer.username}** +${answer.points} ${answer.points === 1 ? 'poen' : 'poena'} (${totalPoints})\n`;
+        });
+
+        await postBotMessage(summary);
+      }
+      
+      // Clear answers from database after showing summary
+      await clearQuestionAnswers(questionId);
       
       // Atomically clear the question ONLY if it's still the same question
       // This prevents race conditions when multiple users return simultaneously
@@ -100,8 +142,52 @@ export async function checkAndHandleTimeout(): Promise<void> {
           // Get updated state for correct answer
           const latestState = await getQuizState();
           const finalAnswer = latestState?.current_answer || correctAnswer;
+          const finalQuestionId = state.current_question_id;
           
-          await postBotMessage(`⏰ Vreme je isteklo! Tačan odgovor je: **${finalAnswer}**`);
+          // Fetch all answers from database
+          const answers = await getQuestionAnswers(finalQuestionId);
+          
+          // Show correct answer and summary
+          if (answers.length === 0) {
+            await postBotMessage(`⏰ Vreme je isteklo! Niko nije pogodio.\n\nTačan odgovor je: **${finalAnswer}**`);
+          } else {
+            // Create summary message
+            let summary = `⏰ Vreme je isteklo! Tačan odgovor: **${finalAnswer}**\n\n📊 **Rezultati:**\n`;
+            
+            // Sort by points (highest first) then by answered_at (fastest first)
+            const sortedAnswers = answers.sort((a, b) => {
+              if (b.points !== a.points) {
+                return b.points - a.points;
+              }
+              return new Date(a.answered_at).getTime() - new Date(b.answered_at).getTime();
+            });
+
+            // Fetch total points for all users who answered
+            const usernames = sortedAnswers.map(answer => answer.username);
+            const { data: userScores, error: scoresError } = await supabase
+              .from('user_scores')
+              .select('username, total_points')
+              .in('username', usernames);
+
+            // Create a map of username -> total_points
+            const totalPointsMap = new Map<string, number>();
+            if (userScores && !scoresError) {
+              userScores.forEach(score => {
+                totalPointsMap.set(score.username, score.total_points);
+              });
+            }
+
+            sortedAnswers.forEach((answer, index) => {
+              const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '✅';
+              const totalPoints = totalPointsMap.get(answer.username) || 0;
+              summary += `${medal} **${answer.username}** +${answer.points} ${answer.points === 1 ? 'poen' : 'poena'} (${totalPoints})\n`;
+            });
+
+            await postBotMessage(summary);
+          }
+          
+          // Clear answers from database after showing summary
+          await clearQuestionAnswers(finalQuestionId);
           
           const { data, error } = await supabase
             .from('quiz_state')

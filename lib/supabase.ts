@@ -43,6 +43,14 @@ export type UserScore = {
   last_updated: string;
 };
 
+export type QuestionAnswer = {
+  id: number;
+  question_id: number;
+  username: string;
+  points: number;
+  answered_at: string;
+};
+
 /**
  * Deletes messages older than 30 minutes from the database
  * This keeps the chat clean and only shows recent messages
@@ -84,6 +92,80 @@ export async function flagQuestionForRemoval(questionId: number): Promise<boolea
     return true;
   } catch (error) {
     console.error('Error flagging question:', error);
+    return false;
+  }
+}
+
+/**
+ * Save a correct answer to the database
+ */
+export async function saveQuestionAnswer(
+  questionId: number,
+  username: string,
+  points: number
+): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('question_answers')
+      .insert({
+        question_id: questionId,
+        username,
+        points,
+      });
+    
+    if (error) {
+      console.error('Error saving answer:', error);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error saving answer:', error);
+    return false;
+  }
+}
+
+/**
+ * Get all answers for a specific question
+ */
+export async function getQuestionAnswers(questionId: number): Promise<QuestionAnswer[]> {
+  try {
+    const { data, error } = await supabase
+      .from('question_answers')
+      .select('*')
+      .eq('question_id', questionId)
+      .order('answered_at', { ascending: true });
+    
+    if (error) {
+      console.error('Error fetching answers:', error);
+      return [];
+    }
+    
+    return data as QuestionAnswer[];
+  } catch (error) {
+    console.error('Error fetching answers:', error);
+    return [];
+  }
+}
+
+/**
+ * Clear all answers for a specific question
+ */
+export async function clearQuestionAnswers(questionId: number): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('question_answers')
+      .delete()
+      .eq('question_id', questionId);
+    
+    if (error) {
+      console.error('Error clearing answers:', error);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error clearing answers:', error);
     return false;
   }
 }

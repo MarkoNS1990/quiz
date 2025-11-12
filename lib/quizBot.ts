@@ -1,4 +1,4 @@
-import { supabase, QuizQuestion, QuizState } from './supabase';
+import { supabase, QuizQuestion, QuizState, saveQuestionAnswer, getQuestionAnswers, clearQuestionAnswers } from './supabase';
 
 const BOT_USERNAME = '🤖 Kviz Bot';
 
@@ -107,8 +107,10 @@ export async function postQuizQuestion(): Promise<boolean> {
       return false;
     }
 
-    // Clear previous question answers
-    currentQuestionAnswers.clear();
+    // Clear previous question answers from database
+    if (currentState?.current_question_id) {
+      await clearQuestionAnswers(currentState.current_question_id);
+    }
 
     // Format the quiz question message in Serbian (with optional image)
     const quizMessage = `
@@ -149,9 +151,6 @@ Napiši tačan odgovor! ✍️
 let activeTimers: { [key: number]: NodeJS.Timeout[] } = {};
 let inactivityTimer: NodeJS.Timeout | null = null;
 
-// Track who answered correctly for current question
-let currentQuestionAnswers: Map<string, { points: number; timestamp: number }> = new Map();
-
 function setupHintTimers(questionId: number, answer: string) {
   // Clear any existing timers for this question
   if (activeTimers[questionId]) {
@@ -184,37 +183,39 @@ function setupHintTimers(questionId: number, answer: string) {
   const timer3 = setTimeout(async () => {
     const state = await getQuizState();
     if (state?.current_question_id === questionId && state.is_active) {
-      await endQuestion(answer);
+      await endQuestion(answer, questionId);
     }
   }, 30000);
   activeTimers[questionId].push(timer3);
 }
 
 // End question and show summary of all correct answers
-async function endQuestion(correctAnswer: string): Promise<void> {
-  console.log('📊 Ending question. Total correct answers:', currentQuestionAnswers.size);
-  console.log('📊 Answers:', Array.from(currentQuestionAnswers.entries()));
+async function endQuestion(correctAnswer: string, questionId: number): Promise<void> {
+  // Fetch all answers from database
+  const answers = await getQuestionAnswers(questionId);
+  
+  console.log('📊 Ending question. Total correct answers:', answers.length);
+  console.log('📊 Answers:', answers);
   
   // Show correct answer and summary
-  if (currentQuestionAnswers.size === 0) {
+  if (answers.length === 0) {
     await postBotMessage(`⏰ Vreme je isteklo! Niko nije pogodio.\n\nTačan odgovor je: **${correctAnswer}**`);
   } else {
     // Create summary message
     let summary = `⏰ Vreme je isteklo! Tačan odgovor: **${correctAnswer}**\n\n📊 **Rezultati:**\n`;
     
-    // Sort by points (highest first) then by timestamp (fastest first)
-    const sortedAnswers = Array.from(currentQuestionAnswers.entries())
-      .sort((a, b) => {
-        if (b[1].points !== a[1].points) {
-          return b[1].points - a[1].points;
-        }
-        return a[1].timestamp - b[1].timestamp;
-      });
+    // Sort by points (highest first) then by answered_at (fastest first)
+    const sortedAnswers = answers.sort((a, b) => {
+      if (b.points !== a.points) {
+        return b.points - a.points;
+      }
+      return new Date(a.answered_at).getTime() - new Date(b.answered_at).getTime();
+    });
     
     console.log('📊 Sorted answers:', sortedAnswers);
 
     // Fetch total points for all users who answered
-    const usernames = sortedAnswers.map(([username]) => username);
+    const usernames = sortedAnswers.map(answer => answer.username);
     const { data: userScores, error } = await supabase
       .from('user_scores')
       .select('username, total_points')
@@ -228,14 +229,17 @@ async function endQuestion(correctAnswer: string): Promise<void> {
       });
     }
 
-    sortedAnswers.forEach(([username, data], index) => {
+    sortedAnswers.forEach((answer, index) => {
       const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '✅';
-      const totalPoints = totalPointsMap.get(username) || 0;
-      summary += `${medal} **${username}** +${data.points} ${data.points === 1 ? 'poen' : 'poena'} (${totalPoints})\n`;
+      const totalPoints = totalPointsMap.get(answer.username) || 0;
+      summary += `${medal} **${answer.username}** +${answer.points} ${answer.points === 1 ? 'poen' : 'poena'} (${totalPoints})\n`;
     });
 
     await postBotMessage(summary);
   }
+  
+  // Clear answers from database after showing summary
+  await clearQuestionAnswers(questionId);
   
   // Reset inactivity timer before moving to next question
   resetInactivityTimer();
@@ -371,12 +375,15 @@ export async function handleAnswerCheck(userAnswer: string, username: string): P
     return; // Silently ignore if quiz not active
   }
 
-  if (!state.current_answer) {
+  if (!state.current_answer || !state.current_question_id) {
     return; // No active question
   }
 
-  // Check if user already answered this question
-  if (currentQuestionAnswers.has(username)) {
+  // Check if user already answered this question (check in database)
+  const existingAnswers = await getQuestionAnswers(state.current_question_id);
+  const alreadyAnswered = existingAnswers.some(a => a.username === username);
+  
+  if (alreadyAnswered) {
     return; // User already answered, ignore duplicate
   }
 
@@ -384,7 +391,6 @@ export async function handleAnswerCheck(userAnswer: string, username: string): P
 
   if (result.correct) {
     console.log(`✅ ${username} answered correctly!`);
-    console.log('Current answers before adding:', Array.from(currentQuestionAnswers.keys()));
     
     // Calculate time elapsed
     let timeElapsed = 0;
@@ -401,16 +407,10 @@ export async function handleAnswerCheck(userAnswer: string, username: string): P
     
     console.log(`${username} gets ${points} points (time: ${clampedTime}s)`);
 
-    // Save this user's answer
-    currentQuestionAnswers.set(username, {
-      points: points,
-      timestamp: Date.now()
-    });
+    // Save this user's answer to database
+    await saveQuestionAnswer(state.current_question_id, username, points);
     
-    console.log('Current answers after adding:', Array.from(currentQuestionAnswers.keys()));
-    console.log('Total answers now:', currentQuestionAnswers.size);
-
-    // Save score to database
+    // Save score to user_scores table
     await saveUserScore(username, points);
 
     // Announce that this user got it right
