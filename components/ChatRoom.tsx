@@ -225,7 +225,7 @@ export default function ChatRoom({ username }: { username: string }) {
 
                 // Wait a bit for the message to be sent, then check answer
                 setTimeout(() => {
-                    handleAnswerCheck(messageContent, username);
+                    handleAnswerCheck(messageContent, username, onlineCount);
                 }, 500);
             }
         } catch (error) {

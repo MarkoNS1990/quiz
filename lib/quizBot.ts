@@ -401,33 +401,40 @@ async function saveUserScore(username: string, points: number): Promise<number> 
 // Get count of online users from presence
 async function getOnlineUsersCount(): Promise<number> {
   try {
-    const channel = supabase.channel('online-users-check');
+    console.log('🔍 Checking online users...');
+    const channel = supabase.channel('online-users-check-' + Date.now());
+    
     await channel.subscribe();
     
     // Wait a bit for presence to sync
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 300));
     
     const presenceState = channel.presenceState();
+    console.log('📊 Presence state:', presenceState);
+    
     const onlineUsers = new Set<string>();
     
     Object.keys(presenceState).forEach((key) => {
       const presences = presenceState[key] as any[];
       presences.forEach((presence) => {
+        console.log('👤 Found presence:', presence);
         if (presence.username) {
           onlineUsers.add(presence.username);
         }
       });
     });
     
+    console.log('✅ Unique online users:', Array.from(onlineUsers));
+    
     supabase.removeChannel(channel);
     return onlineUsers.size;
   } catch (error) {
-    console.error('Error getting online users count:', error);
+    console.error('❌ Error getting online users count:', error);
     return 0;
   }
 }
 
-export async function handleAnswerCheck(userAnswer: string, username: string): Promise<void> {
+export async function handleAnswerCheck(userAnswer: string, username: string, onlineCount?: number): Promise<void> {
   const state = await getQuizState();
 
   // Check if quiz is not active
@@ -485,13 +492,13 @@ export async function handleAnswerCheck(userAnswer: string, username: string): P
     resetInactivityTimer();
 
     // Check if all online users have answered
-    const onlineCount = await getOnlineUsersCount();
     const allAnswers = await getQuestionAnswers(state.current_question_id);
     
-    console.log(`👥 Online users: ${onlineCount}, Answered: ${allAnswers.length}`);
+    console.log(`👥 Online users: ${onlineCount || 'unknown'}, Answered: ${allAnswers.length}`);
     
     // If all online users answered, end question immediately
-    if (onlineCount > 0 && allAnswers.length >= onlineCount) {
+    // Only auto-advance if we have onlineCount info
+    if (onlineCount && onlineCount > 0 && allAnswers.length >= onlineCount) {
       console.log('🎉 All online users answered! Moving to next question...');
       
       // Clear existing timers for this question
