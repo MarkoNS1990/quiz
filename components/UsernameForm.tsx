@@ -7,6 +7,7 @@ export default function UsernameForm({ onSubmit }: { onSubmit: (username: string
     const [username, setUsername] = useState('');
     const [existingUsernames, setExistingUsernames] = useState<Set<string>>(new Set());
     const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         // Subscribe to online users to check for duplicates
@@ -27,15 +28,23 @@ export default function UsernameForm({ onSubmit }: { onSubmit: (username: string
                 });
 
                 setExistingUsernames(usernames);
+                setIsLoading(false);
             })
-            .subscribe();
+            .subscribe(async (status) => {
+                if (status === 'SUBSCRIBED') {
+                    // Initial sync - wait a bit for presence to load
+                    setTimeout(() => {
+                        setIsLoading(false);
+                    }, 1000);
+                }
+            });
 
         return () => {
             supabase.removeChannel(channel);
         };
     }, []);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const trimmedUsername = username.trim();
         
@@ -44,14 +53,42 @@ export default function UsernameForm({ onSubmit }: { onSubmit: (username: string
             return;
         }
 
-        // Check if username already exists (case insensitive)
-        if (existingUsernames.has(trimmedUsername.toLowerCase())) {
-            setError('Ovaj nick je već zauzet! Izaberite drugi.');
-            return;
-        }
+        setIsLoading(true);
+        
+        // Double-check by fetching current presence state
+        const channel = supabase.channel('final-username-check');
+        
+        await channel.subscribe(async (status) => {
+            if (status === 'SUBSCRIBED') {
+                // Wait a moment for presence to sync
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                const state = channel.presenceState();
+                const currentUsernames = new Set<string>();
+                
+                Object.keys(state).forEach((key) => {
+                    const presences = state[key] as any[];
+                    presences.forEach((presence) => {
+                        if (presence.username) {
+                            currentUsernames.add(presence.username.toLowerCase());
+                        }
+                    });
+                });
 
-        setError('');
-        onSubmit(trimmedUsername);
+                // Check if username is taken
+                if (currentUsernames.has(trimmedUsername.toLowerCase())) {
+                    setError('⚠️ Ovaj nick je već zauzet! Izaberite drugi.');
+                    setIsLoading(false);
+                    supabase.removeChannel(channel);
+                    return;
+                }
+
+                // Username is available
+                setError('');
+                supabase.removeChannel(channel);
+                onSubmit(trimmedUsername);
+            }
+        });
     };
 
     return (
@@ -97,10 +134,10 @@ export default function UsernameForm({ onSubmit }: { onSubmit: (username: string
 
                     <button
                         type="submit"
-                        disabled={!username.trim()}
+                        disabled={!username.trim() || isLoading}
                         className="w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        Započni Igru
+                        {isLoading ? '⏳ Proveravam...' : 'Započni Igru'}
                     </button>
                 </form>
             </div>
