@@ -47,15 +47,19 @@ export default function CategorySelector({ onStartQuiz, disabled }: CategorySele
 
   const handleStartQuiz = () => {
     console.log('🚀 Starting quiz with categories:', selectedCategories);
-    // If no categories selected or all selected, pass null (all questions)
-    if (selectedCategories.size === 0 || selectedCategories.size === categories.length) {
-      console.log('➡️ All categories selected, passing null');
-      onStartQuiz(null);
-    } else {
-      const selected = Array.from(selectedCategories);
-      console.log('➡️ Specific categories selected:', selected);
-      onStartQuiz(selected);
+    console.log('📊 Total available categories:', categories.length);
+    
+    // If no categories selected, don't start quiz
+    if (selectedCategories.size === 0) {
+      console.log('⚠️ No categories selected!');
+      alert('Molimo izaberite bar jednu oblast!');
+      return;
     }
+    
+    // Always pass the selected categories array
+    const selected = Array.from(selectedCategories);
+    console.log('➡️ Selected categories being sent:', selected);
+    onStartQuiz(selected);
     setShowSelector(false);
   };
 
