@@ -376,6 +376,9 @@ export async function handleAnswerCheck(userAnswer: string, username: string): P
   const result = checkAnswer(userAnswer, state.current_answer);
 
   if (result.correct) {
+    console.log(`✅ ${username} answered correctly!`);
+    console.log('Current answers before adding:', Array.from(currentQuestionAnswers.keys()));
+    
     // Calculate time elapsed
     let timeElapsed = 0;
     if (state.question_start_time) {
@@ -388,12 +391,17 @@ export async function handleAnswerCheck(userAnswer: string, username: string): P
     // Calculate points (clamp timeElapsed to 30 seconds max)
     const clampedTime = Math.min(Math.max(timeElapsed, 0), 30);
     const points = calculatePoints(clampedTime);
+    
+    console.log(`${username} gets ${points} points (time: ${clampedTime}s)`);
 
     // Save this user's answer
     currentQuestionAnswers.set(username, {
       points: points,
       timestamp: Date.now()
     });
+    
+    console.log('Current answers after adding:', Array.from(currentQuestionAnswers.keys()));
+    console.log('Total answers now:', currentQuestionAnswers.size);
 
     // Save score to database
     await saveUserScore(username, points);

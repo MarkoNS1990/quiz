@@ -1,15 +1,57 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
 
 export default function UsernameForm({ onSubmit }: { onSubmit: (username: string) => void }) {
     const [username, setUsername] = useState('');
+    const [existingUsernames, setExistingUsernames] = useState<Set<string>>(new Set());
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+        // Subscribe to online users to check for duplicates
+        const channel = supabase.channel('username-check');
+
+        channel
+            .on('presence', { event: 'sync' }, () => {
+                const state = channel.presenceState();
+                const usernames = new Set<string>();
+                
+                Object.keys(state).forEach((key) => {
+                    const presences = state[key] as any[];
+                    presences.forEach((presence) => {
+                        if (presence.username) {
+                            usernames.add(presence.username.toLowerCase());
+                        }
+                    });
+                });
+
+                setExistingUsernames(usernames);
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, []);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (username.trim()) {
-            onSubmit(username.trim());
+        const trimmedUsername = username.trim();
+        
+        if (!trimmedUsername) {
+            setError('Molimo unesite nick');
+            return;
         }
+
+        // Check if username already exists (case insensitive)
+        if (existingUsernames.has(trimmedUsername.toLowerCase())) {
+            setError('Ovaj nick je već zauzet! Izaberite drugi.');
+            return;
+        }
+
+        setError('');
+        onSubmit(trimmedUsername);
     };
 
     return (
@@ -30,14 +72,27 @@ export default function UsernameForm({ onSubmit }: { onSubmit: (username: string
                         <input
                             type="text"
                             value={username}
-                            onChange={(e) => setUsername(e.target.value)}
+                            onChange={(e) => {
+                                setUsername(e.target.value);
+                                setError(''); // Clear error on change
+                            }}
                             placeholder="npr. gamer123, ninja, marko"
-                            className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:bg-white outline-none transition"
+                            className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:bg-white outline-none transition text-gray-900"
                             required
                             minLength={2}
                             maxLength={30}
                             autoFocus
                         />
+                        {error && (
+                            <p className="mt-2 text-sm text-red-600">
+                                {error}
+                            </p>
+                        )}
+                        {existingUsernames.size > 0 && (
+                            <p className="mt-2 text-xs text-gray-500">
+                                {existingUsernames.size} {existingUsernames.size === 1 ? 'igrač' : 'igrača'} online
+                            </p>
+                        )}
                     </div>
 
                     <button
