@@ -24,7 +24,7 @@ export async function checkAndHandleTimeout(): Promise<void> {
 
     console.log(`⏰ Question elapsed time: ${elapsedSeconds}s`);
 
-    // If more than 30 seconds have passed, end the question
+    // If more than 30 seconds have passed, end the question immediately
     if (elapsedSeconds >= 30) {
       console.log('⏰ Question timed out! Ending it now...');
       
@@ -67,6 +67,51 @@ export async function checkAndHandleTimeout(): Promise<void> {
           await postQuizQuestion();
         }
       }, 2000);
+    } else if (elapsedSeconds < 30) {
+      // Question is still active but timers were stopped (all users left)
+      // Resume the question with remaining time
+      console.log(`⏰ Resuming question with ${30 - elapsedSeconds}s remaining`);
+      
+      const remainingTime = (30 - elapsedSeconds) * 1000;
+      const correctAnswer = state.current_answer || 'Nepoznato';
+      
+      // Set timer to end question when time runs out
+      setTimeout(async () => {
+        const currentState = await getQuizState();
+        // Only end if it's still the same question
+        if (currentState?.current_question_id === state.current_question_id) {
+          console.log('⏰ Resumption timer expired, ending question');
+          
+          // Get updated state for correct answer
+          const latestState = await getQuizState();
+          const finalAnswer = latestState?.current_answer || correctAnswer;
+          
+          await postBotMessage(`⏰ Vreme je isteklo! Tačan odgovor je: **${finalAnswer}**`);
+          
+          const { data, error } = await supabase
+            .from('quiz_state')
+            .update({
+              current_question_id: null,
+              current_answer: null,
+              question_start_time: null,
+            })
+            .eq('id', 1)
+            .eq('current_question_id', state.current_question_id)
+            .select();
+
+          if (error || !data || data.length === 0) {
+            console.log('⏰ Question already handled');
+            return;
+          }
+
+          setTimeout(async () => {
+            const nextState = await getQuizState();
+            if (nextState?.is_active && !nextState.current_question_id) {
+              await postQuizQuestion();
+            }
+          }, 2000);
+        }
+      }, remainingTime);
     }
   } catch (error) {
     console.error('Error checking quiz timeout:', error);
