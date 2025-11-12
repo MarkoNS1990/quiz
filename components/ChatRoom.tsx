@@ -471,11 +471,11 @@ export default function ChatRoom({ username }: { username: string }) {
                                                         return (
                                                             <>
                                                                 {parts[0]}
-                                                                <div className="my-2">
+                                                                <div className="my-2 flex justify-center">
                                                                     <img
                                                                         src={imageUrl}
                                                                         alt="Quiz slika"
-                                                                        className="rounded-lg max-w-full h-auto shadow-md"
+                                                                        className="rounded-lg max-w-full h-auto shadow-md mx-auto"
                                                                         style={{ maxHeight }}
                                                                         onLoad={scrollToBottom}
                                                                         onError={(e) => {
