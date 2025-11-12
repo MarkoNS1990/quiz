@@ -516,7 +516,8 @@ export async function handleAnswerCheck(userAnswer: string, username: string, on
       setTimeout(async () => {
         const currentState = await getQuizState();
         if (currentState?.current_question_id === state.current_question_id && currentState.is_active) {
-          await endQuestion(state.current_answer, state.current_question_id, true); // true = all answered
+          const answer = state.current_answer || currentState.current_answer || 'Nepoznato';
+          await endQuestion(answer, state.current_question_id, true); // true = all answered
         }
       }, 2000);
     }
