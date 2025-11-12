@@ -150,6 +150,7 @@ export default function ChatRoom({ username }: { username: string }) {
     const loadQuizState = async () => {
         const state = await getQuizState();
         if (state) {
+            console.log('🎮 Quiz state loaded:', { is_active: state.is_active, current_question_id: state.current_question_id });
             setQuizRunning(state.is_active);
             setCurrentQuestionId(state.current_question_id);
         }
@@ -168,8 +169,10 @@ export default function ChatRoom({ username }: { username: string }) {
                     table: 'quiz_state',
                 },
                 (payload: any) => {
-                    console.log('Quiz state updated!', payload);
-                    setQuizRunning(payload.new.is_active);
+                    console.log('🔔 Quiz state updated!', payload);
+                    const isActive = payload.new.is_active;
+                    console.log('🎮 New quiz state - is_active:', isActive, 'quizRunning will be set to:', isActive);
+                    setQuizRunning(isActive);
                     setCurrentQuestionId(payload.new.current_question_id);
                 }
             )
@@ -307,9 +310,11 @@ export default function ChatRoom({ username }: { username: string }) {
                                 <>
                                     <button
                                         onClick={async () => {
+                                            console.log('🛑 Zaustavljanje kviza...');
                                             setQuizLoading(true);
                                             try {
                                                 await stopQuiz();
+                                                console.log('✅ Kviz zaustavljen');
                                             } catch (error) {
                                                 console.error('Error stopping quiz:', error);
                                                 alert('Greška pri zaustavljanju kviza');
@@ -318,14 +323,14 @@ export default function ChatRoom({ username }: { username: string }) {
                                             }
                                         }}
                                         disabled={quizLoading}
-                                        className="px-3 lg:px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                                        className="px-3 lg:px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg text-sm lg:text-base"
                                     >
-                                        {quizLoading ? '⏳' : '⛔ Zaustavi'}
+                                        {quizLoading ? '⏳' : '⛔ Stop'}
                                     </button>
                                     <button
                                         onClick={handleRestartQuiz}
                                         disabled={quizLoading}
-                                        className="px-3 lg:px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                                        className="px-3 lg:px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg text-sm lg:text-base"
                                     >
                                         {quizLoading ? '⏳' : '🔄 Restart'}
                                     </button>
