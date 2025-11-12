@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase, Message, cleanupOldMessages, flagQuestionForRemoval } from '@/lib/supabase';
 import { startQuiz, handleAnswerCheck, getQuizState, resetInactivityTimer, stopQuiz, restartQuiz } from '@/lib/quizBot';
+import { checkAndHandleTimeout } from '@/lib/checkQuizTimeout';
 import Leaderboard from './Leaderboard';
 import OnlineUsers from './OnlineUsers';
 
@@ -24,6 +25,9 @@ export default function ChatRoom({ username }: { username: string }) {
         // Clean up old messages (older than 30 minutes) on app load
         cleanupOldMessages();
 
+        // Check if quiz question timed out (in case all users left)
+        checkAndHandleTimeout();
+
         loadMessages();
         const cleanupMessages = subscribeToMessages();
 
@@ -34,9 +38,11 @@ export default function ChatRoom({ username }: { username: string }) {
         const cleanupQuiz = subscribeToQuizState();
 
         // Handle app visibility change (when app comes back from background)
-        const handleVisibilityChange = () => {
+        const handleVisibilityChange = async () => {
             if (document.visibilityState === 'visible') {
                 console.log('App became visible - refreshing data');
+                // Check if quiz question timed out while user was away
+                await checkAndHandleTimeout();
                 // Reload messages and quiz state when app becomes visible again
                 loadMessages();
                 loadQuizState();
@@ -45,8 +51,10 @@ export default function ChatRoom({ username }: { username: string }) {
         };
 
         // Handle window focus (additional safeguard for iOS/mobile)
-        const handleFocus = () => {
+        const handleFocus = async () => {
             console.log('App gained focus - refreshing data');
+            // Check if quiz question timed out while user was away
+            await checkAndHandleTimeout();
             loadMessages();
             loadQuizState();
             scrollToBottom();
