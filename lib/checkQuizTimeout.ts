@@ -1,11 +1,26 @@
 import { supabase, QuizState } from './supabase';
 import { postBotMessage, getQuizState, postQuizQuestion } from './quizBot';
 
+// Lock to prevent multiple simultaneous checks
+let isCheckingTimeout = false;
+let lastCheckTime = 0;
+const MIN_CHECK_INTERVAL = 1000; // Minimum 1 second between checks
+
 /**
  * Check if current question has timed out and needs to be ended
  * This is called when user enters/returns to the app
  */
 export async function checkAndHandleTimeout(): Promise<void> {
+  // Prevent multiple simultaneous checks
+  const now = Date.now();
+  if (isCheckingTimeout || (now - lastCheckTime) < MIN_CHECK_INTERVAL) {
+    console.log('⏰ Check already in progress or too soon, skipping');
+    return;
+  }
+
+  isCheckingTimeout = true;
+  lastCheckTime = now;
+
   try {
     const state = await getQuizState();
     
@@ -115,6 +130,8 @@ export async function checkAndHandleTimeout(): Promise<void> {
     }
   } catch (error) {
     console.error('Error checking quiz timeout:', error);
+  } finally {
+    isCheckingTimeout = false;
   }
 }
 
