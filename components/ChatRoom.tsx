@@ -376,6 +376,13 @@ export default function ChatRoom({ username }: { username: string }) {
 
                                 const isLatestQuestion = isQuestion && index === lastQuestionIndex;
 
+                                // Hide user messages during active quiz (only show bot messages and your own)
+                                const shouldHideMessage = quizRunning && !isBot && !isCurrentUser;
+                                
+                                if (shouldHideMessage) {
+                                    return null; // Don't render hidden messages
+                                }
+
                                 return (
                                     <div
                                         key={message.id}

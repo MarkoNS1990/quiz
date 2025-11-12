@@ -100,6 +100,9 @@ export async function postQuizQuestion(): Promise<boolean> {
       return false;
     }
 
+    // Clear previous question answers
+    currentQuestionAnswers.clear();
+
     // Format the quiz question message in Serbian (with optional image)
     const quizMessage = `
 📚 **${question.category || 'Kviz'}** ${question.difficulty ? `(${question.difficulty})` : ''}
@@ -136,6 +139,9 @@ Napiši tačan odgovor! ✍️
 let activeTimers: { [key: number]: NodeJS.Timeout[] } = {};
 let inactivityTimer: NodeJS.Timeout | null = null;
 
+// Track who answered correctly for current question
+let currentQuestionAnswers: Map<string, { points: number; timestamp: number }> = new Map();
+
 function setupHintTimers(questionId: number, answer: string) {
   // Clear any existing timers for this question
   if (activeTimers[questionId]) {
@@ -164,22 +170,56 @@ function setupHintTimers(questionId: number, answer: string) {
   }, 20000);
   activeTimers[questionId].push(timer2);
 
-  // 30 seconds - skip to next question
+  // 30 seconds - end question and show all who answered correctly
   const timer3 = setTimeout(async () => {
     const state = await getQuizState();
     if (state?.current_question_id === questionId && state.is_active) {
-      await postBotMessage(`⏰ Vreme je isteklo! Tačan odgovor je: **${answer}**`);
-
-      // Wait 2 seconds then post next question
-      setTimeout(async () => {
-        const currentState = await getQuizState();
-        if (currentState?.is_active) {
-          await postQuizQuestion();
-        }
-      }, 2000);
+      await endQuestion(answer);
     }
   }, 30000);
   activeTimers[questionId].push(timer3);
+}
+
+// End question and show summary of all correct answers
+async function endQuestion(correctAnswer: string): Promise<void> {
+  // Show correct answer and summary
+  if (currentQuestionAnswers.size === 0) {
+    await postBotMessage(`⏰ Vreme je isteklo! Niko nije pogodio.\n\nTačan odgovor je: **${correctAnswer}**`);
+  } else {
+    // Create summary message
+    let summary = `⏰ Vreme je isteklo! Tačan odgovor: **${correctAnswer}**\n\n📊 **Rezultati:**\n`;
+    
+    // Sort by points (highest first) then by timestamp (fastest first)
+    const sortedAnswers = Array.from(currentQuestionAnswers.entries())
+      .sort((a, b) => {
+        if (b[1].points !== a[1].points) {
+          return b[1].points - a[1].points;
+        }
+        return a[1].timestamp - b[1].timestamp;
+      });
+
+    sortedAnswers.forEach(([username, data], index) => {
+      const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '✅';
+      summary += `${medal} **${username}** - ${data.points} ${data.points === 1 ? 'poen' : 'poena'}\n`;
+    });
+
+    await postBotMessage(summary);
+  }
+
+  // Clear current question
+  await updateQuizState({
+    current_question_id: null,
+    current_answer: null,
+    question_start_time: null,
+  });
+
+  // Wait 3 seconds then post next question
+  setTimeout(async () => {
+    const currentState = await getQuizState();
+    if (currentState?.is_active) {
+      await postQuizQuestion();
+    }
+  }, 3000);
 }
 
 export async function postBotMessage(content: string): Promise<boolean> {
@@ -294,77 +334,54 @@ export async function handleAnswerCheck(userAnswer: string, username: string): P
 
   // Check if quiz is not active
   if (!state || !state.is_active) {
-    // Only respond if the message looks like an attempt to answer (short, single word)
-    const looksLikeAnswer = userAnswer.trim().length > 0 &&
-      userAnswer.trim().length < 50 &&
-      userAnswer.trim().split(/\s+/).length <= 3;
-
-    if (looksLikeAnswer) {
-      await postBotMessage(`${username}, kviz trenutno nije aktivan! 🤖\nKlikni na "Pokreni Kviz" dugme da započneš igru! 🎮`);
-    }
-    return;
+    return; // Silently ignore if quiz not active
   }
 
   if (!state.current_answer) {
     return; // No active question
   }
 
+  // Check if user already answered this question
+  if (currentQuestionAnswers.has(username)) {
+    return; // User already answered, ignore duplicate
+  }
+
   const result = checkAnswer(userAnswer, state.current_answer);
 
   if (result.correct) {
-    // Clear timers for this question
-    if (state.current_question_id && activeTimers[state.current_question_id]) {
-      activeTimers[state.current_question_id].forEach(timer => clearTimeout(timer));
-      delete activeTimers[state.current_question_id];
-    }
-
     // Calculate time elapsed
     let timeElapsed = 0;
     if (state.question_start_time) {
       timeElapsed = Math.round((Date.now() - new Date(state.question_start_time).getTime()) / 1000);
     } else {
       console.warn('Question start time is missing! Defaulting to 25 seconds (1 point)');
-      timeElapsed = 25; // Default to 25s (1 point) if start time is missing
+      timeElapsed = 25;
     }
 
-    console.log('Time elapsed:', timeElapsed, 'seconds');
-    console.log('Question start time:', state.question_start_time);
-
-    // Calculate points (clamp timeElapsed to 30 seconds max to avoid 0 points)
+    // Calculate points (clamp timeElapsed to 30 seconds max)
     const clampedTime = Math.min(Math.max(timeElapsed, 0), 30);
     const points = calculatePoints(clampedTime);
 
-    console.log('Clamped time:', clampedTime, 'Calculated points:', points);
+    // Save this user's answer
+    currentQuestionAnswers.set(username, {
+      points: points,
+      timestamp: Date.now()
+    });
 
-    // Save score to database and get new total
-    const totalScore = await saveUserScore(username, points);
+    // Save score to database
+    await saveUserScore(username, points);
 
-    // Message with points and correct answer
+    // Announce that this user got it right
     let pointsEmoji = '';
     if (points === 3) pointsEmoji = '🏆';
     else if (points === 2) pointsEmoji = '🥈';
     else if (points === 1) pointsEmoji = '🥉';
 
-    await postBotMessage(`🎉 Bravo, ${username}! Tačan odgovor: **${state.current_answer}**\n\nDobili ste ${points} ${points === 1 ? 'poen' : points < 5 ? 'poena' : 'poena'}! ${pointsEmoji}\n💯 Ukupno: ${totalScore} ${totalScore === 1 ? 'poen' : totalScore < 5 ? 'poena' : 'poena'}!`);
-
-    // Clear current question and wait before posting next one
-    await updateQuizState({
-      current_question_id: null,
-      current_answer: null,
-      question_start_time: null,
-    });
-
-    // Check if quiz is still active and post next question
-    setTimeout(async () => {
-      const currentState = await getQuizState();
-      if (currentState?.is_active) {
-        await postQuizQuestion();
-      }
-    }, 2000);
+    await postBotMessage(`✅ **${username}** je pogodio! +${points} ${points === 1 ? 'poen' : 'poena'} ${pointsEmoji}`);
 
   } else if (result.similarity > 40) {
-    // Close but not quite
-    await postBotMessage(`🤔 Blizu si ${username}! Pokušaj ponovo...`);
+    // Close but not quite - only notify the user privately would be ideal, but we'll skip for now
+    // Don't announce wrong answers to keep chat clean
   }
   // Don't respond if answer is too far off
 }
