@@ -46,11 +46,15 @@ export default function CategorySelector({ onStartQuiz, disabled }: CategorySele
   };
 
   const handleStartQuiz = () => {
+    console.log('🚀 Starting quiz with categories:', selectedCategories);
     // If no categories selected or all selected, pass null (all questions)
     if (selectedCategories.size === 0 || selectedCategories.size === categories.length) {
+      console.log('➡️ All categories selected, passing null');
       onStartQuiz(null);
     } else {
-      onStartQuiz(Array.from(selectedCategories));
+      const selected = Array.from(selectedCategories);
+      console.log('➡️ Specific categories selected:', selected);
+      onStartQuiz(selected);
     }
     setShowSelector(false);
   };
@@ -88,7 +92,10 @@ export default function CategorySelector({ onStartQuiz, disabled }: CategorySele
             {disabled ? '🎮 Kviz Aktivan' : '🚀 Pokreni Kviz (Sve)'}
           </button>
           <button
-            onClick={() => setShowSelector(true)}
+            onClick={() => {
+              console.log('🔘 Kliknut Izaberi Oblasti button');
+              setShowSelector(true);
+            }}
             disabled={disabled}
             className={`px-4 py-3 rounded-lg font-semibold transition-all ${
               disabled
@@ -101,12 +108,16 @@ export default function CategorySelector({ onStartQuiz, disabled }: CategorySele
           </button>
         </div>
       ) : (
-        <div className="absolute bottom-full mb-2 left-0 right-0 bg-white rounded-lg shadow-2xl p-4 border-2 border-blue-500 z-50 max-h-96 overflow-y-auto">
-          <div className="flex justify-between items-center mb-3">
-            <h3 className="font-bold text-lg text-gray-800">📂 Izaberi Oblasti</h3>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setShowSelector(false)}>
+          <div className="bg-white rounded-lg shadow-2xl p-6 border-2 border-blue-500 max-h-96 overflow-y-auto w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-bold text-xl text-gray-800">📂 Izaberi Oblasti</h3>
             <button
-              onClick={() => setShowSelector(false)}
-              className="text-gray-500 hover:text-gray-700 font-bold text-xl"
+              onClick={() => {
+                console.log('❌ Zatvaranje selektora');
+                setShowSelector(false);
+              }}
+              className="text-gray-500 hover:text-gray-700 font-bold text-2xl leading-none"
             >
               ✕
             </button>
@@ -165,6 +176,7 @@ export default function CategorySelector({ onStartQuiz, disabled }: CategorySele
               Otkaži
             </button>
           </div>
+        </div>
         </div>
       )}
     </div>
