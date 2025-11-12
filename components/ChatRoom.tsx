@@ -302,15 +302,34 @@ export default function ChatRoom({ username }: { username: string }) {
                                 disabled={quizLoading || quizRunning}
                             />
 
-                            {/* Restart Quiz Button - Only show when quiz is running */}
+                            {/* Stop & Restart Quiz Buttons - Only show when quiz is running */}
                             {quizRunning && (
-                                <button
-                                    onClick={handleRestartQuiz}
-                                    disabled={quizLoading}
-                                    className="px-3 lg:px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-                                >
-                                    {quizLoading ? '⏳' : '🔄 Restart'}
-                                </button>
+                                <>
+                                    <button
+                                        onClick={async () => {
+                                            setQuizLoading(true);
+                                            try {
+                                                await stopQuiz();
+                                            } catch (error) {
+                                                console.error('Error stopping quiz:', error);
+                                                alert('Greška pri zaustavljanju kviza');
+                                            } finally {
+                                                setQuizLoading(false);
+                                            }
+                                        }}
+                                        disabled={quizLoading}
+                                        className="px-3 lg:px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                                    >
+                                        {quizLoading ? '⏳' : '⛔ Zaustavi'}
+                                    </button>
+                                    <button
+                                        onClick={handleRestartQuiz}
+                                        disabled={quizLoading}
+                                        className="px-3 lg:px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                                    >
+                                        {quizLoading ? '⏳' : '🔄 Restart'}
+                                    </button>
+                                </>
                             )}
 
                             {/* Online Users Button */}

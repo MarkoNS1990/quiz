@@ -71,6 +71,9 @@ export async function getRandomQuizQuestion(): Promise<QuizQuestion | null> {
     const state = await getQuizState();
     const selectedCategories = state?.selected_categories;
 
+    console.log('🎲 Getting random question...');
+    console.log('📂 Selected categories from state:', selectedCategories);
+
     let query = supabase
       .from('quiz_questions')
       .select('*')
@@ -78,23 +81,42 @@ export async function getRandomQuizQuestion(): Promise<QuizQuestion | null> {
 
     // If categories are selected, filter by them
     if (selectedCategories && selectedCategories.length > 0) {
+      console.log('🔍 Filtering by categories:', selectedCategories);
       query = query.in('custom_category', selectedCategories);
+    } else {
+      console.log('📖 No category filter - showing all questions');
     }
 
     const { data, error } = await query.order('id', { ascending: false });
 
+    console.log('📊 Query returned', data?.length || 0, 'questions');
+    if (data && data.length > 0) {
+      console.log('Sample questions:', data.slice(0, 3).map(q => ({
+        id: q.id,
+        question: q.question.substring(0, 50),
+        custom_category: q.custom_category
+      })));
+    }
+
     if (error) throw error;
 
     if (!data || data.length === 0) {
-      console.error('No quiz questions found in database');
+      console.error('❌ No quiz questions found in database');
       return null;
     }
 
     // Pick a random question from the results
     const randomIndex = Math.floor(Math.random() * data.length);
-    return data[randomIndex] as QuizQuestion;
+    const selectedQuestion = data[randomIndex] as QuizQuestion;
+    console.log('✅ Selected question:', {
+      id: selectedQuestion.id,
+      question: selectedQuestion.question.substring(0, 50),
+      custom_category: selectedQuestion.custom_category
+    });
+    
+    return selectedQuestion;
   } catch (error) {
-    console.error('Error fetching quiz question:', error);
+    console.error('❌ Error fetching quiz question:', error);
     return null;
   }
 }
@@ -498,9 +520,17 @@ export async function startQuiz(selectedCategories?: string[] | null): Promise<v
   }
 
   // Update quiz state with selected categories
+  console.log('💾 Saving selected categories to state:', selectedCategories);
   await updateQuizState({ 
     is_active: true,
     selected_categories: selectedCategories || null
+  });
+
+  // Verify it was saved
+  const verifyState = await getQuizState();
+  console.log('✅ Verified state after save:', {
+    is_active: verifyState?.is_active,
+    selected_categories: verifyState?.selected_categories
   });
 
   // Build category message
