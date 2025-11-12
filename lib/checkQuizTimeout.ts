@@ -28,31 +28,42 @@ export async function checkAndHandleTimeout(): Promise<void> {
     if (elapsedSeconds >= 30) {
       console.log('⏰ Question timed out! Ending it now...');
       
-      // Get the correct answer from current state
+      // Get the correct answer and question ID from current state
       const correctAnswer = state.current_answer || 'Nepoznato';
+      const questionId = state.current_question_id;
       
       // Post timeout message
       await postBotMessage(`⏰ Vreme je isteklo! Tačan odgovor je: **${correctAnswer}**`);
       
-      // Clear the question
-      const { error } = await supabase
+      // Atomically clear the question ONLY if it's still the same question
+      // This prevents race conditions when multiple users return simultaneously
+      const { data, error } = await supabase
         .from('quiz_state')
         .update({
           current_question_id: null,
           current_answer: null,
           question_start_time: null,
         })
-        .eq('id', 1);
+        .eq('id', 1)
+        .eq('current_question_id', questionId) // Only update if still this question
+        .select();
 
       if (error) {
         console.error('Error clearing timed out question:', error);
         return;
       }
 
+      // If no rows were updated, another user already handled this
+      if (!data || data.length === 0) {
+        console.log('⏰ Question already handled by another user');
+        return;
+      }
+
       // Wait 2 seconds then post next question
       setTimeout(async () => {
         const currentState = await getQuizState();
-        if (currentState?.is_active) {
+        // Double-check that there's no active question before posting new one
+        if (currentState?.is_active && !currentState.current_question_id) {
           await postQuizQuestion();
         }
       }, 2000);

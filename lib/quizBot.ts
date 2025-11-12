@@ -92,6 +92,13 @@ export async function getRandomQuizQuestion(): Promise<QuizQuestion | null> {
 
 export async function postQuizQuestion(): Promise<boolean> {
   try {
+    // Check if there's already an active question (prevent duplicate questions)
+    const currentState = await getQuizState();
+    if (currentState?.current_question_id) {
+      console.log('⚠️ Question already active, skipping post');
+      return false;
+    }
+
     const question = await getRandomQuizQuestion();
 
     if (!question) {
