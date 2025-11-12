@@ -105,22 +105,27 @@ export async function saveQuestionAnswer(
   points: number
 ): Promise<boolean> {
   try {
-    const { error } = await supabase
+    console.log(`💾 Attempting to save answer: questionId=${questionId}, username=${username}, points=${points}`);
+    
+    const { data, error } = await supabase
       .from('question_answers')
       .insert({
         question_id: questionId,
         username,
         points,
-      });
+      })
+      .select();
     
     if (error) {
-      console.error('Error saving answer:', error);
+      console.error('❌ Error saving answer to database:', error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
       return false;
     }
     
+    console.log('✅ Answer saved successfully:', data);
     return true;
   } catch (error) {
-    console.error('Error saving answer:', error);
+    console.error('❌ Exception saving answer:', error);
     return false;
   }
 }
@@ -130,6 +135,8 @@ export async function saveQuestionAnswer(
  */
 export async function getQuestionAnswers(questionId: number): Promise<QuestionAnswer[]> {
   try {
+    console.log(`📖 Fetching answers for question ${questionId}`);
+    
     const { data, error } = await supabase
       .from('question_answers')
       .select('*')
@@ -137,13 +144,15 @@ export async function getQuestionAnswers(questionId: number): Promise<QuestionAn
       .order('answered_at', { ascending: true });
     
     if (error) {
-      console.error('Error fetching answers:', error);
+      console.error('❌ Error fetching answers:', error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
       return [];
     }
     
+    console.log(`✅ Fetched ${data?.length || 0} answers:`, data);
     return data as QuestionAnswer[];
   } catch (error) {
-    console.error('Error fetching answers:', error);
+    console.error('❌ Exception fetching answers:', error);
     return [];
   }
 }
