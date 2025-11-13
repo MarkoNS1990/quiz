@@ -78,8 +78,7 @@ export async function getRandomQuizQuestion(): Promise<QuizQuestion | null> {
 
     let query = supabase
       .from('quiz_questions')
-      .select('*')
-      .eq('remove_question', false);
+      .select('*');
 
     // Exclude recent questions (last 50)
     if (recentQuestions.length > 0) {

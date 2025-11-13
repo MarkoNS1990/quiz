@@ -23,7 +23,7 @@ export async function checkAndHandleTimeout(): Promise<void> {
 
   try {
     const state = await getQuizState();
-    
+
     if (!state || !state.is_active) {
       return; // Quiz not active
     }
@@ -42,27 +42,27 @@ export async function checkAndHandleTimeout(): Promise<void> {
     // If more than 40 seconds have passed, end the question immediately
     if (elapsedSeconds >= 40) {
       console.log('⏰ Question timed out! Ending it now...');
-      
+
       // Get the correct answer and question ID from current state
       const correctAnswer = state.current_answer || 'Nepoznato';
       const questionId = state.current_question_id;
-      
+
       // Safety check - should never be null here, but TypeScript requires it
       if (!questionId) {
         console.error('⚠️ Question ID is null, cannot fetch answers');
         return;
       }
-      
+
       // Fetch all answers from database
       const answers = await getQuestionAnswers(questionId);
-      
+
       // Show correct answer and summary
       if (answers.length === 0) {
         await postBotMessage(`⏰ Vreme je isteklo! Niko nije pogodio.\n\nTačan odgovor je: **${correctAnswer}**`);
       } else {
         // Create summary message
         let summary = `⏰ Vreme je isteklo! Tačan odgovor: **${correctAnswer}**\n\n📊 **Rezultati:**\n`;
-        
+
         // Sort by points (highest first) then by answered_at (fastest first)
         const sortedAnswers = answers.sort((a, b) => {
           if (b.points !== a.points) {
@@ -94,10 +94,10 @@ export async function checkAndHandleTimeout(): Promise<void> {
 
         await postBotMessage(summary);
       }
-      
+
       // Clear answers from database after showing summary
       await clearQuestionAnswers(questionId);
-      
+
       // Atomically clear the question ONLY if it's still the same question
       // This prevents race conditions when multiple users return simultaneously
       const { data, error } = await supabase
@@ -134,38 +134,38 @@ export async function checkAndHandleTimeout(): Promise<void> {
       // Question is still active but timers were stopped (all users left)
       // Resume the question with remaining time
       console.log(`⏰ Resuming question with ${40 - elapsedSeconds}s remaining`);
-      
+
       const remainingTime = (40 - elapsedSeconds) * 1000;
       const correctAnswer = state.current_answer || 'Nepoznato';
-      
+
       // Set timer to end question when time runs out
       setTimeout(async () => {
         const currentState = await getQuizState();
         // Only end if it's still the same question
         if (currentState?.current_question_id === state.current_question_id) {
           console.log('⏰ Resumption timer expired, ending question');
-          
+
           // Get updated state for correct answer
           const latestState = await getQuizState();
           const finalAnswer = latestState?.current_answer || correctAnswer;
           const finalQuestionId = state.current_question_id;
-          
+
           // Safety check - should never be null here, but TypeScript requires it
           if (!finalQuestionId) {
             console.error('⚠️ Question ID is null, cannot fetch answers');
             return;
           }
-          
+
           // Fetch all answers from database
           const answers = await getQuestionAnswers(finalQuestionId);
-          
+
           // Show correct answer and summary
           if (answers.length === 0) {
             await postBotMessage(`⏰ Vreme je isteklo! Niko nije pogodio.\n\nTačan odgovor je: **${finalAnswer}**`);
           } else {
             // Create summary message
             let summary = `⏰ Vreme je isteklo! Tačan odgovor: **${finalAnswer}**\n\n📊 **Rezultati:**\n`;
-            
+
             // Sort by points (highest first) then by answered_at (fastest first)
             const sortedAnswers = answers.sort((a, b) => {
               if (b.points !== a.points) {
@@ -197,10 +197,10 @@ export async function checkAndHandleTimeout(): Promise<void> {
 
             await postBotMessage(summary);
           }
-          
+
           // Clear answers from database after showing summary
           await clearQuestionAnswers(finalQuestionId);
-          
+
           const { data, error } = await supabase
             .from('quiz_state')
             .update({

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { supabase, Message, cleanupOldMessages, flagQuestionForRemoval } from '@/lib/supabase';
+import { supabase, Message, cleanupOldMessages } from '@/lib/supabase';
 import { startQuiz, handleAnswerCheck, getQuizState, resetInactivityTimer, stopQuiz, restartQuiz } from '@/lib/quizBot';
 import { checkAndHandleTimeout } from '@/lib/checkQuizTimeout';
 import Leaderboard from './Leaderboard';
@@ -19,7 +19,6 @@ export default function ChatRoom({ username }: { username: string }) {
     const [showLeaderboard, setShowLeaderboard] = useState(false);
     const [showOnlineUsers, setShowOnlineUsers] = useState(false);
     const [onlineCount, setOnlineCount] = useState(0);
-    const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(new Set());
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
 
@@ -244,21 +243,6 @@ export default function ChatRoom({ username }: { username: string }) {
             alert('Greška pri pokretanju kviza');
         } finally {
             setQuizLoading(false);
-        }
-    };
-
-    const handleFlagQuestion = async (questionId: number) => {
-        try {
-            const success = await flagQuestionForRemoval(questionId);
-            if (success) {
-                // Add to flagged set for immediate UI feedback
-                setFlaggedQuestions(prev => new Set(prev).add(questionId));
-                console.log('✓ Pitanje je označeno za proveru!');
-            } else {
-                console.error('✗ Greška pri označavanju pitanja.');
-            }
-        } catch (error) {
-            console.error('Error flagging question:', error);
         }
     };
 
@@ -495,24 +479,6 @@ export default function ChatRoom({ username }: { username: string }) {
                                                     return message.content;
                                                 })()}
                                             </div>
-
-                                            {/* Flag Question Button - Only show for the LATEST quiz question when quiz is active */}
-                                            {isLatestQuestion && quizRunning && currentQuestionId && (
-                                                <div className="mt-3 pt-2 border-t border-white/20">
-                                                    {flaggedQuestions.has(currentQuestionId) ? (
-                                                        <div className="text-xs px-3 py-1 bg-green-500/30 rounded-full text-white">
-                                                            ✓ Označeno
-                                                        </div>
-                                                    ) : (
-                                                        <button
-                                                            onClick={() => handleFlagQuestion(currentQuestionId)}
-                                                            className="text-xs px-3 py-1 bg-white/20 hover:bg-white/30 rounded-full transition-colors backdrop-blur-sm"
-                                                        >
-                                                            🚩 Glupo pitanje
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            )}
 
                                             <div
                                                 className={`text-xs mt-1 ${isBot || isCurrentUser
