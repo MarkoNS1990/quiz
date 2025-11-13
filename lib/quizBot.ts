@@ -202,33 +202,33 @@ function setupHintTimers(questionId: number, answer: string) {
 
   activeTimers[questionId] = [];
 
-  // 10 seconds - reveal 20% of letters
+  // 20 seconds - reveal 20% of letters
   const timer1 = setTimeout(async () => {
     const state = await getQuizState();
     if (state?.current_question_id === questionId && state.is_active) {
       const hint20 = generateHint(answer, 0.2);
       await postBotMessage(`💡 Hint (20%): ${hint20}`);
     }
-  }, 10000);
+  }, 20000);
   activeTimers[questionId].push(timer1);
 
-  // 20 seconds - reveal 50% of letters
+  // 30 seconds - reveal 50% of letters
   const timer2 = setTimeout(async () => {
     const state = await getQuizState();
     if (state?.current_question_id === questionId && state.is_active) {
       const hint50 = generateHint(answer, 0.5);
       await postBotMessage(`💡 Hint (50%): ${hint50}`);
     }
-  }, 20000);
+  }, 30000);
   activeTimers[questionId].push(timer2);
 
-  // 30 seconds - end question and show all who answered correctly
+  // 40 seconds - end question and show all who answered correctly
   const timer3 = setTimeout(async () => {
     const state = await getQuizState();
     if (state?.current_question_id === questionId && state.is_active) {
       await endQuestion(answer, questionId);
     }
-  }, 30000);
+  }, 40000);
   activeTimers[questionId].push(timer3);
 }
 

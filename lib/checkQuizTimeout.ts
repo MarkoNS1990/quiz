@@ -39,8 +39,8 @@ export async function checkAndHandleTimeout(): Promise<void> {
 
     console.log(`⏰ Question elapsed time: ${elapsedSeconds}s`);
 
-    // If more than 30 seconds have passed, end the question immediately
-    if (elapsedSeconds >= 30) {
+    // If more than 40 seconds have passed, end the question immediately
+    if (elapsedSeconds >= 40) {
       console.log('⏰ Question timed out! Ending it now...');
       
       // Get the correct answer and question ID from current state
@@ -130,12 +130,12 @@ export async function checkAndHandleTimeout(): Promise<void> {
           await postQuizQuestion();
         }
       }, 2000);
-    } else if (elapsedSeconds < 30) {
+    } else if (elapsedSeconds < 40) {
       // Question is still active but timers were stopped (all users left)
       // Resume the question with remaining time
-      console.log(`⏰ Resuming question with ${30 - elapsedSeconds}s remaining`);
+      console.log(`⏰ Resuming question with ${40 - elapsedSeconds}s remaining`);
       
-      const remainingTime = (30 - elapsedSeconds) * 1000;
+      const remainingTime = (40 - elapsedSeconds) * 1000;
       const correctAnswer = state.current_answer || 'Nepoznato';
       
       // Set timer to end question when time runs out
