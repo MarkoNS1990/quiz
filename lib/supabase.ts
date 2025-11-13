@@ -31,6 +31,7 @@ export type QuizState = {
   current_answer: string | null;
   question_start_time: string | null;
   selected_categories: string[] | null;
+  recent_questions: number[] | null;
   updated_at: string;
 };
 

@@ -67,17 +67,24 @@ export async function updateQuizState(updates: Partial<QuizState>): Promise<bool
 
 export async function getRandomQuizQuestion(): Promise<QuizQuestion | null> {
   try {
-    // Get current quiz state to check for category filter
+    // Get current quiz state to check for category filter and recent questions
     const state = await getQuizState();
     const selectedCategories = state?.selected_categories;
+    const recentQuestions = state?.recent_questions || [];
 
     console.log('🎲 Getting random question...');
     console.log('📂 Selected categories from state:', selectedCategories);
+    console.log('🚫 Excluding recent questions:', recentQuestions.length, 'questions');
 
     let query = supabase
       .from('quiz_questions')
       .select('*')
       .eq('remove_question', false);
+
+    // Exclude recent questions (last 50)
+    if (recentQuestions.length > 0) {
+      query = query.not('id', 'in', `(${recentQuestions.join(',')})`);
+    }
 
     // If categories are selected, filter by them
     if (selectedCategories && selectedCategories.length > 0) {
@@ -113,6 +120,11 @@ export async function getRandomQuizQuestion(): Promise<QuizQuestion | null> {
       question: selectedQuestion.question.substring(0, 50),
       custom_category: selectedQuestion.custom_category
     });
+
+    // Update recent questions list (keep last 50)
+    const updatedRecentQuestions = [...recentQuestions, selectedQuestion.id].slice(-50);
+    await updateQuizState({ recent_questions: updatedRecentQuestions });
+    console.log('📝 Updated recent questions list, now has', updatedRecentQuestions.length, 'questions');
     
     return selectedQuestion;
   } catch (error) {
@@ -586,11 +598,12 @@ export async function startQuiz(selectedCategories?: string[] | null): Promise<v
     inactivityTimer = null;
   }
 
-  // Update quiz state with selected categories
+  // Update quiz state with selected categories and clear recent questions
   console.log('💾 Saving selected categories to state:', selectedCategories);
   await updateQuizState({ 
     is_active: true,
-    selected_categories: selectedCategories || null
+    selected_categories: selectedCategories || null,
+    recent_questions: [] // Clear question history when starting new quiz
   });
 
   // Verify it was saved
