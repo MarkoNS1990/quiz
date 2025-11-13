@@ -470,7 +470,47 @@ export async function handleAnswerCheck(userAnswer: string, username: string, on
     return; // User already answered, ignore duplicate
   }
 
-  const result = checkAnswer(userAnswer, state.current_answer);
+  // Fetch the question details to get custom_category
+  const { data: questionData, error: questionError } = await supabase
+    .from('quiz_questions')
+    .select('custom_category')
+    .eq('id', state.current_question_id)
+    .single();
+
+  if (questionError) {
+    console.error('Error fetching question category:', questionError);
+  }
+
+  const customCategory = questionData?.custom_category;
+  
+  // Categories where last name (prezime) is accepted as correct answer
+  const lastnameCategories = [
+    'Zlatna Lopta',
+    'Sampioni Formule 1',
+    'Slikari - slike',
+    'Knjizevna dela - pisci'
+  ];
+
+  let result = checkAnswer(userAnswer, state.current_answer);
+
+  // Special handling for lastname categories
+  if (!result.correct && customCategory && lastnameCategories.includes(customCategory)) {
+    console.log(`📝 Checking lastname for category: ${customCategory}`);
+    
+    // Extract last name from correct answer (last word)
+    const correctWords = state.current_answer.trim().split(' ');
+    if (correctWords.length >= 2) {
+      const lastName = correctWords[correctWords.length - 1];
+      console.log(`👤 Last name extracted: ${lastName}`);
+      
+      // Check if user's answer matches the last name
+      const lastNameResult = checkAnswer(userAnswer, lastName);
+      if (lastNameResult.correct) {
+        console.log(`✅ Last name match accepted!`);
+        result = { correct: true, similarity: 100 };
+      }
+    }
+  }
 
   if (result.correct) {
     console.log(`✅ ${username} answered correctly!`);
