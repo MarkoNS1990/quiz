@@ -112,75 +112,85 @@ export default function CategorySelector({ onStartQuiz, disabled }: CategorySele
           </button>
         </div>
       ) : (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setShowSelector(false)}>
-          <div className="bg-white rounded-lg shadow-2xl p-6 border-2 border-blue-500 max-h-96 overflow-y-auto w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="font-bold text-xl text-gray-800">📂 Izaberi Oblasti</h3>
-            <button
-              onClick={() => {
-                console.log('❌ Zatvaranje selektora');
-                setShowSelector(false);
-              }}
-              className="text-gray-500 hover:text-gray-700 font-bold text-2xl leading-none"
-            >
-              ✕
-            </button>
-          </div>
-
-          <div className="mb-3">
-            <label className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded cursor-pointer">
-              <input
-                type="checkbox"
-                checked={selectedCategories.size === categories.length}
-                onChange={toggleSelectAll}
-                className="w-4 h-4"
-              />
-              <span className="font-semibold text-blue-600">
-                {selectedCategories.size === categories.length ? '✓ Sve oblasti' : 'Izaberi sve'}
-              </span>
-            </label>
-          </div>
-
-          <div className="border-t pt-2 space-y-1">
-            {categories.map((category) => (
-              <label
-                key={category}
-                className="flex items-center gap-2 p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors"
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => setShowSelector(false)}>
+          <div className="bg-white rounded-lg shadow-2xl border-2 border-blue-500 w-full max-w-lg flex flex-col" style={{ maxHeight: '80vh' }} onClick={(e) => e.stopPropagation()}>
+            
+            {/* Header - Fixed */}
+            <div className="flex justify-between items-center p-6 pb-4 border-b">
+              <h3 className="font-bold text-xl text-gray-800">📂 Izaberi Oblasti</h3>
+              <button
+                onClick={() => {
+                  console.log('❌ Zatvaranje selektora');
+                  setShowSelector(false);
+                }}
+                className="text-gray-500 hover:text-gray-700 font-bold text-2xl leading-none"
               >
+                ✕
+              </button>
+            </div>
+
+            {/* Select All - Fixed */}
+            <div className="px-6 pt-4 pb-2">
+              <label className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={selectedCategories.has(category)}
-                  onChange={() => toggleCategory(category)}
-                  className="w-4 h-4 accent-blue-500"
+                  checked={selectedCategories.size === categories.length}
+                  onChange={toggleSelectAll}
+                  className="w-4 h-4"
                 />
-                <span className="text-gray-700">{category}</span>
+                <span className="font-semibold text-blue-600">
+                  {selectedCategories.size === categories.length ? '✓ Sve oblasti' : 'Izaberi sve'}
+                </span>
               </label>
-            ))}
-          </div>
+            </div>
 
-          <div className="mt-4 pt-3 border-t flex gap-2">
-            <button
-              onClick={handleStartQuiz}
-              disabled={selectedCategories.size === 0}
-              className={`flex-1 px-4 py-2 rounded-lg font-semibold transition-all ${
-                selectedCategories.size === 0
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700'
-              }`}
-            >
-              🚀 Pokreni Kviz
-              {selectedCategories.size > 0 && selectedCategories.size < categories.length && (
-                <span className="ml-1">({selectedCategories.size})</span>
-              )}
-            </button>
-            <button
-              onClick={() => setShowSelector(false)}
-              className="px-4 py-2 rounded-lg font-semibold bg-gray-200 text-gray-700 hover:bg-gray-300 transition-all"
-            >
-              Otkaži
-            </button>
+            {/* Categories List - Scrollable */}
+            <div className="flex-1 overflow-y-auto px-6 py-2">
+              <div className="space-y-1">
+                {categories.map((category) => (
+                  <label
+                    key={category}
+                    className="flex items-center gap-2 p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedCategories.has(category)}
+                      onChange={() => toggleCategory(category)}
+                      className="w-4 h-4 accent-blue-500"
+                    />
+                    <span className="text-gray-700">{category}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Footer with Buttons - Sticky */}
+            <div className="p-6 pt-4 border-t bg-white rounded-b-lg">
+              <div className="flex gap-2">
+                <button
+                  onClick={handleStartQuiz}
+                  disabled={selectedCategories.size === 0}
+                  className={`flex-1 px-4 py-3 rounded-lg font-semibold transition-all text-base ${
+                    selectedCategories.size === 0
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 shadow-lg'
+                  }`}
+                >
+                  🚀 Pokreni Kviz
+                  {selectedCategories.size > 0 && selectedCategories.size < categories.length && (
+                    <span className="ml-1">({selectedCategories.size})</span>
+                  )}
+                </button>
+                <button
+                  onClick={() => setShowSelector(false)}
+                  className="px-4 py-3 rounded-lg font-semibold bg-gray-200 text-gray-700 hover:bg-gray-300 transition-all"
+                >
+                  Otkaži
+                </button>
+              </div>
+            </div>
+
           </div>
-        </div>
         </div>
       )}
     </div>
