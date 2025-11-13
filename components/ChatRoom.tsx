@@ -293,7 +293,7 @@ export default function ChatRoom({ username }: { username: string }) {
             {/* Sticky Header */}
             <header className="sticky top-0 z-50 bg-white shadow-md">
                 <div className="max-w-6xl mx-auto px-4 py-4">
-                    <div className="flex justify-between items-center gap-4">
+                    <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-3">
                         {/* Left: Title & User */}
                         <div className="flex-shrink-0">
                             <h1 className="text-xl lg:text-2xl font-bold text-gray-800">
@@ -313,7 +313,7 @@ export default function ChatRoom({ username }: { username: string }) {
                         </div>
 
                         {/* Right: Action Buttons */}
-                        <div className="flex gap-2 flex-wrap justify-end">
+                        <div className="flex gap-1.5 sm:gap-2 flex-wrap justify-start lg:justify-end">
                             {/* Category Selector & Quiz Control */}
                             <CategorySelector 
                                 onStartQuiz={handleStartQuiz}
@@ -338,14 +338,14 @@ export default function ChatRoom({ username }: { username: string }) {
                                             }
                                         }}
                                         disabled={quizLoading}
-                                        className="px-3 lg:px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg text-sm lg:text-base"
+                                        className="px-2 sm:px-3 lg:px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg text-xs sm:text-sm lg:text-base"
                                     >
                                         {quizLoading ? '⏳' : '⛔ Stop'}
                                     </button>
                                     <button
                                         onClick={handleRestartQuiz}
                                         disabled={quizLoading}
-                                        className="px-3 lg:px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg text-sm lg:text-base"
+                                        className="px-2 sm:px-3 lg:px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg text-xs sm:text-sm lg:text-base"
                                     >
                                         {quizLoading ? '⏳' : '🔄 Restart'}
                                     </button>
@@ -355,16 +355,16 @@ export default function ChatRoom({ username }: { username: string }) {
                             {/* Online Users Button */}
                             <button
                                 onClick={() => setShowOnlineUsers(true)}
-                                className="px-3 lg:px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition font-semibold flex items-center gap-1 lg:gap-2"
+                                className="px-2 sm:px-3 lg:px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition font-semibold flex items-center gap-1 text-xs sm:text-sm lg:text-base"
                             >
                                 👥 <span>{onlineCount}</span>
-                                <span className="hidden lg:inline">{onlineCount === 1 ? 'korisnik' : 'korisnika'}</span>
+                                <span className="hidden sm:inline">{onlineCount === 1 ? 'korisnik' : 'korisnika'}</span>
                             </button>
 
                             {/* Leaderboard Button */}
                             <button
                                 onClick={() => setShowLeaderboard(true)}
-                                className="px-3 lg:px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition font-semibold"
+                                className="px-2 sm:px-3 lg:px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition font-semibold text-xs sm:text-sm lg:text-base"
                             >
                                 🏆 <span className="hidden sm:inline">Leaderboard</span>
                             </button>
@@ -372,10 +372,10 @@ export default function ChatRoom({ username }: { username: string }) {
                             {/* Change Username Button */}
                             <button
                                 onClick={handleChangeUsername}
-                                className="px-3 lg:px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition"
+                                className="px-2 sm:px-3 lg:px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition text-xs sm:text-sm lg:text-base"
                             >
-                                <span className="hidden lg:inline">Promeni Ime</span>
-                                <span className="lg:hidden">👤</span>
+                                <span className="hidden sm:inline">Promeni Ime</span>
+                                <span className="sm:hidden">👤</span>
                             </button>
                         </div>
                     </div>

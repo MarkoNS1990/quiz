@@ -69,7 +69,7 @@ export default function CategorySelector({ onStartQuiz, disabled }: CategorySele
       <button
         onClick={() => onStartQuiz(null)}
         disabled={disabled}
-        className={`px-6 py-3 rounded-lg font-semibold transition-all ${
+        className={`px-2 sm:px-4 lg:px-6 py-2 rounded-lg font-semibold transition-all text-xs sm:text-sm lg:text-base ${
           disabled
             ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
             : 'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 shadow-lg hover:shadow-xl'
@@ -83,11 +83,11 @@ export default function CategorySelector({ onStartQuiz, disabled }: CategorySele
   return (
     <div className="relative">
       {!showSelector ? (
-        <div className="flex gap-2">
+        <div className="flex gap-1.5 sm:gap-2">
           <button
             onClick={() => onStartQuiz(null)}
             disabled={disabled}
-            className={`px-6 py-3 rounded-lg font-semibold transition-all ${
+            className={`px-2 sm:px-4 lg:px-6 py-2 rounded-lg font-semibold transition-all text-xs sm:text-sm lg:text-base whitespace-nowrap ${
               disabled
                 ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
                 : 'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 shadow-lg hover:shadow-xl'
@@ -101,14 +101,14 @@ export default function CategorySelector({ onStartQuiz, disabled }: CategorySele
               setShowSelector(true);
             }}
             disabled={disabled}
-            className={`px-4 py-3 rounded-lg font-semibold transition-all ${
+            className={`px-2 sm:px-3 lg:px-4 py-2 rounded-lg font-semibold transition-all text-xs sm:text-sm lg:text-base whitespace-nowrap ${
               disabled
                 ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
                 : 'bg-blue-500 text-white hover:bg-blue-600 shadow-lg hover:shadow-xl'
             }`}
             title="Izaberi oblasti"
           >
-            📂 Izaberi Oblasti
+            📂 <span className="hidden sm:inline">Izaberi Oblasti</span>
           </button>
         </div>
       ) : (
