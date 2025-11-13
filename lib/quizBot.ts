@@ -485,7 +485,7 @@ export async function handleAnswerCheck(userAnswer: string, username: string, on
 
   // Categories where last name (prezime) is accepted as correct answer
   const lastnameCategories = [
-    'Zlatna Lopta',
+    'Zlatna lopta',
     'Šampioni Formule 1',
     'Slikari - slike',
     'Knjizevna dela - pisci'
