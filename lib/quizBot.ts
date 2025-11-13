@@ -124,7 +124,7 @@ export async function getRandomQuizQuestion(): Promise<QuizQuestion | null> {
     const updatedRecentQuestions = [...recentQuestions, selectedQuestion.id].slice(-50);
     await updateQuizState({ recent_questions: updatedRecentQuestions });
     console.log('📝 Updated recent questions list, now has', updatedRecentQuestions.length, 'questions');
-    
+
     return selectedQuestion;
   } catch (error) {
     console.error('❌ Error fetching quiz question:', error);
@@ -166,7 +166,7 @@ Napiši tačan odgovor! ✍️
 
     // Post the quiz question to chat
     await postBotMessage(quizMessage);
-    
+
     // Reset inactivity timer when posting new question
     resetInactivityTimer();
 
@@ -235,10 +235,10 @@ function setupHintTimers(questionId: number, answer: string) {
 async function endQuestion(correctAnswer: string, questionId: number, allAnswered: boolean = false): Promise<void> {
   // Fetch all answers from database
   const answers = await getQuestionAnswers(questionId);
-  
+
   console.log('📊 Ending question. Total correct answers:', answers.length, 'All answered:', allAnswered);
   console.log('📊 Answers:', answers);
-  
+
   // Show correct answer and summary
   if (answers.length === 0) {
     await postBotMessage(`⏰ Vreme je isteklo! Niko nije pogodio.\n\nTačan odgovor je: **${correctAnswer}**`);
@@ -250,7 +250,7 @@ async function endQuestion(correctAnswer: string, questionId: number, allAnswere
     } else {
       summary = `⏰ Vreme je isteklo! Tačan odgovor: **${correctAnswer}**\n\n📊 **Rezultati:**\n`;
     }
-    
+
     // Sort by points (highest first) then by answered_at (fastest first)
     const sortedAnswers = answers.sort((a, b) => {
       if (b.points !== a.points) {
@@ -258,7 +258,7 @@ async function endQuestion(correctAnswer: string, questionId: number, allAnswere
       }
       return new Date(a.answered_at).getTime() - new Date(b.answered_at).getTime();
     });
-    
+
     console.log('📊 Sorted answers:', sortedAnswers);
 
     // Fetch total points for all users who answered
@@ -284,10 +284,10 @@ async function endQuestion(correctAnswer: string, questionId: number, allAnswere
 
     await postBotMessage(summary);
   }
-  
+
   // Clear answers from database after showing summary
   await clearQuestionAnswers(questionId);
-  
+
   // Reset inactivity timer before moving to next question
   resetInactivityTimer();
 
@@ -348,7 +348,7 @@ export function checkAnswer(userAnswer: string, correctAnswer: string): { correc
   // Multi-word answers: require all important words to be present
   if (correctWords.length > 1) {
     // Count how many correct words are present in user answer
-    const matchedWords = correctWords.filter(cw => 
+    const matchedWords = correctWords.filter(cw =>
       userWords.some(uw => {
         // Words must be very similar (at least 80% match)
         const maxLen = Math.max(cw.length, uw.length);
@@ -358,7 +358,7 @@ export function checkAnswer(userAnswer: string, correctAnswer: string): { correc
     );
 
     const matchPercentage = (matchedWords.length / correctWords.length) * 100;
-    
+
     // Require at least 80% of words to match for multi-word answers
     return {
       correct: matchPercentage >= 80,
@@ -419,17 +419,17 @@ async function getOnlineUsersCount(): Promise<number> {
   try {
     console.log('🔍 Checking online users...');
     const channel = supabase.channel('online-users-check-' + Date.now());
-    
+
     await channel.subscribe();
-    
+
     // Wait a bit for presence to sync
     await new Promise(resolve => setTimeout(resolve, 300));
-    
+
     const presenceState = channel.presenceState();
     console.log('📊 Presence state:', presenceState);
-    
+
     const onlineUsers = new Set<string>();
-    
+
     Object.keys(presenceState).forEach((key) => {
       const presences = presenceState[key] as any[];
       presences.forEach((presence) => {
@@ -439,9 +439,9 @@ async function getOnlineUsersCount(): Promise<number> {
         }
       });
     });
-    
+
     console.log('✅ Unique online users:', Array.from(onlineUsers));
-    
+
     supabase.removeChannel(channel);
     return onlineUsers.size;
   } catch (error) {
@@ -465,7 +465,7 @@ export async function handleAnswerCheck(userAnswer: string, username: string, on
   // Check if user already answered this question (check in database)
   const existingAnswers = await getQuestionAnswers(state.current_question_id);
   const alreadyAnswered = existingAnswers.some(a => a.username === username);
-  
+
   if (alreadyAnswered) {
     return; // User already answered, ignore duplicate
   }
@@ -482,11 +482,11 @@ export async function handleAnswerCheck(userAnswer: string, username: string, on
   }
 
   const customCategory = questionData?.custom_category;
-  
+
   // Categories where last name (prezime) is accepted as correct answer
   const lastnameCategories = [
     'Zlatna Lopta',
-    'Sampioni Formule 1',
+    'Šampioni Formule 1',
     'Slikari - slike',
     'Knjizevna dela - pisci'
   ];
@@ -496,13 +496,13 @@ export async function handleAnswerCheck(userAnswer: string, username: string, on
   // Special handling for lastname categories
   if (!result.correct && customCategory && lastnameCategories.includes(customCategory)) {
     console.log(`📝 Checking lastname for category: ${customCategory}`);
-    
+
     // Extract last name from correct answer (last word)
     const correctWords = state.current_answer.trim().split(' ');
     if (correctWords.length >= 2) {
       const lastName = correctWords[correctWords.length - 1];
       console.log(`👤 Last name extracted: ${lastName}`);
-      
+
       // Check if user's answer matches the last name
       const lastNameResult = checkAnswer(userAnswer, lastName);
       if (lastNameResult.correct) {
@@ -514,7 +514,7 @@ export async function handleAnswerCheck(userAnswer: string, username: string, on
 
   if (result.correct) {
     console.log(`✅ ${username} answered correctly!`);
-    
+
     // Calculate time elapsed
     let timeElapsed = 0;
     if (state.question_start_time) {
@@ -527,12 +527,12 @@ export async function handleAnswerCheck(userAnswer: string, username: string, on
     // Calculate points (clamp timeElapsed to 30 seconds max)
     const clampedTime = Math.min(Math.max(timeElapsed, 0), 30);
     const points = calculatePoints(clampedTime);
-    
+
     console.log(`${username} gets ${points} points (time: ${clampedTime}s)`);
 
     // Save this user's answer to database
     await saveQuestionAnswer(state.current_question_id, username, points);
-    
+
     // Save score to user_scores table
     await saveUserScore(username, points);
 
@@ -543,26 +543,26 @@ export async function handleAnswerCheck(userAnswer: string, username: string, on
     else if (points === 1) pointsEmoji = '🥉';
 
     await postBotMessage(`✅ **${username}** je pogodio! +${points} ${points === 1 ? 'poen' : 'poena'} ${pointsEmoji}`);
-    
+
     // Reset inactivity timer since there's activity
     resetInactivityTimer();
 
     // Check if all online users have answered
     const allAnswers = await getQuestionAnswers(state.current_question_id);
-    
+
     console.log(`👥 Online users: ${onlineCount || 'unknown'}, Answered: ${allAnswers.length}`);
-    
+
     // If all online users answered, end question immediately
     // Only auto-advance if we have onlineCount info
     if (onlineCount && onlineCount > 0 && allAnswers.length >= onlineCount) {
       console.log('🎉 All online users answered! Moving to next question...');
-      
+
       // Clear existing timers for this question
       if (activeTimers[state.current_question_id]) {
         activeTimers[state.current_question_id].forEach(timer => clearTimeout(timer));
         delete activeTimers[state.current_question_id];
       }
-      
+
       // Wait 2 seconds to show the last answer, then end question
       setTimeout(async () => {
         const currentState = await getQuizState();
@@ -630,7 +630,7 @@ export async function startQuiz(selectedCategories?: string[] | null): Promise<v
     timers.forEach(timer => clearTimeout(timer));
   });
   activeTimers = {};
-  
+
   // Clear any existing inactivity timer
   if (inactivityTimer) {
     clearTimeout(inactivityTimer);
@@ -639,7 +639,7 @@ export async function startQuiz(selectedCategories?: string[] | null): Promise<v
 
   // Update quiz state with selected categories and clear recent questions
   console.log('💾 Saving selected categories to state:', selectedCategories);
-  await updateQuizState({ 
+  await updateQuizState({
     is_active: true,
     selected_categories: selectedCategories || null,
     recent_questions: [] // Clear question history when starting new quiz
@@ -662,7 +662,7 @@ export async function startQuiz(selectedCategories?: string[] | null): Promise<v
 
   // Post question and start quiz
   await postQuizQuestion();
-  
+
   // Start inactivity timer
   resetInactivityTimer();
 }
@@ -670,20 +670,20 @@ export async function startQuiz(selectedCategories?: string[] | null): Promise<v
 // Restart quiz (secret command) - stops and immediately starts again
 export async function restartQuiz(): Promise<void> {
   console.log('🔄 Restarting quiz...');
-  
+
   // Get current categories before stopping
   const currentState = await getQuizState();
   const currentCategories = currentState?.selected_categories;
-  
+
   // Stop quiz silently (no message)
   await stopQuiz(false);
-  
+
   // Wait a moment to ensure state is cleared
   await new Promise(resolve => setTimeout(resolve, 500));
-  
+
   // Start quiz with same categories
   await startQuiz(currentCategories);
-  
+
   console.log('✅ Quiz restarted successfully!');
 }
 
