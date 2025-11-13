@@ -108,7 +108,7 @@ export default function CategorySelector({ onStartQuiz, disabled }: CategorySele
             }`}
             title="Izaberi oblasti"
           >
-            📂 <span className="hidden sm:inline">Izaberi Oblasti</span>
+            📂 Oblasti
           </button>
         </div>
       ) : (

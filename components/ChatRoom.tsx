@@ -292,7 +292,28 @@ export default function ChatRoom({ username }: { username: string }) {
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col">
             {/* Sticky Header */}
             <header className="sticky top-0 z-50 bg-white shadow-md">
-                <div className="max-w-6xl mx-auto px-4 py-4">
+                <div className="max-w-6xl mx-auto px-4 py-3">
+                    {/* Top Right Corner - Settings Buttons */}
+                    <div className="flex justify-end gap-1.5 sm:gap-2 mb-2">
+                        {/* Leaderboard Button */}
+                        <button
+                            onClick={() => setShowLeaderboard(true)}
+                            className="px-2 sm:px-3 py-1.5 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition font-semibold text-xs sm:text-sm"
+                        >
+                            🏆 <span className="hidden sm:inline">Leaderboard</span>
+                        </button>
+
+                        {/* Change Username Button */}
+                        <button
+                            onClick={handleChangeUsername}
+                            className="px-2 sm:px-3 py-1.5 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition text-xs sm:text-sm"
+                        >
+                            <span className="hidden sm:inline">Promeni Ime</span>
+                            <span className="sm:hidden">👤</span>
+                        </button>
+                    </div>
+
+                    {/* Main Header Content */}
                     <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-3">
                         {/* Left: Title & User */}
                         <div className="flex-shrink-0">
@@ -312,7 +333,7 @@ export default function ChatRoom({ username }: { username: string }) {
                             <p className="text-xs lg:text-sm text-gray-600">Korisnik: {username}</p>
                         </div>
 
-                        {/* Right: Action Buttons */}
+                        {/* Right: Quiz Action Buttons */}
                         <div className="flex gap-1.5 sm:gap-2 flex-wrap justify-start lg:justify-end">
                             {/* Category Selector & Quiz Control */}
                             <CategorySelector 
@@ -359,23 +380,6 @@ export default function ChatRoom({ username }: { username: string }) {
                             >
                                 👥 <span>{onlineCount}</span>
                                 <span className="hidden sm:inline">{onlineCount === 1 ? 'korisnik' : 'korisnika'}</span>
-                            </button>
-
-                            {/* Leaderboard Button */}
-                            <button
-                                onClick={() => setShowLeaderboard(true)}
-                                className="px-2 sm:px-3 lg:px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition font-semibold text-xs sm:text-sm lg:text-base"
-                            >
-                                🏆 <span className="hidden sm:inline">Leaderboard</span>
-                            </button>
-
-                            {/* Change Username Button */}
-                            <button
-                                onClick={handleChangeUsername}
-                                className="px-2 sm:px-3 lg:px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition text-xs sm:text-sm lg:text-base"
-                            >
-                                <span className="hidden sm:inline">Promeni Ime</span>
-                                <span className="sm:hidden">👤</span>
                             </button>
                         </div>
                     </div>
